@@ -2,6 +2,7 @@ version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "dev"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -10,11 +11,21 @@ updates:
 
   - package-ecosystem: "bun"
     directory: "/"
+    target-branch: "dev"
     schedule:
       interval: "weekly"
       day: "monday"
       time: "05:00"
       timezone: "America/Los_Angeles"
+    ignore:
+      # Types follow the Node major pinned in .node-version.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # @cloudflare/vitest-plugin only supports vitest 4.
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitest/*"
+        update-types: ["version-update:semver-major"]
     groups:
       tanstack:
         patterns:
@@ -41,13 +52,14 @@ updates:
           - "lucide-react"
       cloudflare:
         patterns:
-          - "wrangler"
+          - "cf"
           - "@cloudflare/*"
       tooling:
         patterns:
           - "vite"
           - "vite-tsconfig-paths"
           - "vitest"
+          - "@vitest/*"
           - "@vitejs/plugin-react"
           - "@biomejs/biome"
           - "@testing-library/*"

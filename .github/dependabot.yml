@@ -50,6 +50,14 @@ updates:
           - "tailwind-merge"
           - "class-variance-authority"
           - "lucide-react"
+      # These ship in lockstep; bumping one package alone breaks the build.
+      orpc:
+        patterns:
+          - "@orpc/*"
+      better-auth:
+        patterns:
+          - "better-auth"
+          - "@better-auth/*"
       cloudflare:
         patterns:
           - "cf"

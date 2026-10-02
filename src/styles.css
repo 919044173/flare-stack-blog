@@ -717,6 +717,6 @@
   background: var(--fuwari-selection-bg);
   pointer-events: none;
 }
-.prose > p {
-  text-indent: 2em;
+.prose p {
+  text-indent: 2em !important;
 }

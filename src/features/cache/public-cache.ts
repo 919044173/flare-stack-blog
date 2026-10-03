@@ -340,13 +340,8 @@ export const invalidate = {
   },
   async tagChanged(context: InvalidateContext, params?: { slugs?: string[] }) {
     const slugs = params?.slugs ?? [];
-    if (slugs.length === 0) {
-      await run("tag.changed", context, {});
-    } else {
-      await Promise.all(
-        slugs.map((slug) => run("tag.changed", context, { slug })),
-      );
-    }
+    // 批量处理：只跑一次 run，避免每个 slug 单独触发一次缓存失效
+    await run("tag.changed", context, { slugs });
     await purgeWorkersCache(
       context.executionCtx,
       purgeOptionsFor("tag.changed", slugs.length > 0 ? { slugs } : {}),
@@ -357,13 +352,8 @@ export const invalidate = {
     params?: { slugs?: string[] },
   ) {
     const slugs = params?.slugs ?? [];
-    if (slugs.length === 0) {
-      await run("category.changed", context, {});
-    } else {
-      await Promise.all(
-        slugs.map((slug) => run("category.changed", context, { slug })),
-      );
-    }
+    // 批量处理：只跑一次 run
+    await run("category.changed", context, { slugs });
     await purgeWorkersCache(
       context.executionCtx,
       purgeOptionsFor("category.changed", slugs.length > 0 ? { slugs } : {}),

@@ -30,7 +30,11 @@ export function ArchivePanel({ posts, isMoment = false }: ArchivePanelProps) {
     <div className="fuwari-card-base px-8 py-6">
       {years.map((year) => (
         <div key={year}>
-          <ArchiveYear year={year} count={groupedPosts[year].length} />
+          <ArchiveYear
+           year={year}
+           count={groupedPosts[year].length}
+           isMoment={isMoment}
+           />
 
           {isMoment ? (
             // ✅ 动态模式：竖向卡片列表，卡片间有间距

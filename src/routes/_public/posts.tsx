@@ -88,7 +88,7 @@ function RouteComponent() {
     useSuspenseInfiniteQuery(
       postsInfiniteQueryOptions({
         tagName: search.tagName,
-        categoryName: search.categoryName,
+        categoryName: "文章",
         uncategorized: search.uncategorized,
         limit: POSTS_PER_PAGE,
       }),

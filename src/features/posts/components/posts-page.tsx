@@ -15,6 +15,7 @@ interface PostsPageProps {
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   fetchNextPage: () => void;
+  isMoment?: boolean; // ✅ 新增：标识是否为动态页面
 }
 
 export function PostsPage({
@@ -22,6 +23,7 @@ export function PostsPage({
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
+  isMoment = false, // ✅ 新增：默认值为 false
 }: PostsPageProps) {
   const observerRef = useRef<HTMLDivElement>(null);
 
@@ -47,7 +49,10 @@ export function PostsPage({
       className="fuwari-onload-animation flex flex-col gap-4"
       style={{ animationDelay: "var(--fuwari-content-delay)" }}
     >
-      {posts.length > 0 && <ArchivePanel posts={posts} />}
+      {/* ✅ 把 isMoment 传递给 ArchivePanel */}
+      {posts.length > 0 && (
+        <ArchivePanel posts={posts} isMoment={isMoment} />
+      )}
 
       {/* Infinite Scroll trigger and loading indicator */}
       <div

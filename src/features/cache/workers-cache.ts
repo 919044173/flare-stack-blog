@@ -1,10 +1,12 @@
 import type { WorkersCachePurgeTarget } from "./workers-cache-policy";
+import { allowWrite } from "./cache-throttle";
 
 const TAGS_PER_PURGE = 100;
 
-// 防止 purgeWorkersCache 高频调用触发 Cloudflare 速率限制
-const lastPurgeAt = new Map<string, number>();
-const PURGE_MIN_INTERVAL_MS = 30 * 1000; // 同一批 tag 30 秒内只 purge 一次
+// 防止 purgeWorkersCache 高频调用触发 Cloudflare 速率限制。
+// 采用令牌桶：同一 throttleKey 每分钟最多 5 次 purge。
+const PURGE_LIMIT = 5;
+const PURGE_WINDOW_MS = 60 * 1000;
 
 export type WorkersCachePurgeContext = {
   exports: {
@@ -51,24 +53,30 @@ export async function applyWorkersCachePurge(
   }
 }
 
+/**
+ * 通过 App entrypoint 触发 Workers Cache purge。
+ *
+ * @param ctx Workers purge context
+ * @param target purge 目标
+ * @param options.throttleKey 令牌桶 key。同一 key 每分钟最多 5 次。
+ *                            推荐用 reason（如 "tag.changed"），
+ *                            这样连点保存会被合并，不会打爆速率限制。
+ */
 export async function purgeWorkersCache(
   ctx: WorkersCachePurgeContext,
   target: WorkersCachePurgeTarget,
-) {
-  // 构造节流 key：tags 排序后拼字符串，purgeEverything 单独处理
+  options: { throttleKey?: string } = {},
+): Promise<void> {
   const throttleKey =
-    "purgeEverything" in target
+    options.throttleKey ??
+    ("purgeEverything" in target
       ? "__everything__"
-      : target.tags.slice().sort().join(",");
+      : [...new Set(target.tags)].sort().join(","));
 
-  const now = Date.now();
-  const last = lastPurgeAt.get(throttleKey) ?? 0;
-
-  if (now - last < PURGE_MIN_INTERVAL_MS) {
-    // 30 秒内同一批 tag 已 purge 过，直接跳过
+  if (!allowWrite(throttleKey, { limit: PURGE_LIMIT, windowMs: PURGE_WINDOW_MS })) {
+    // 触发限流：跳过本次 purge，不阻塞主流程
     return;
   }
-  lastPurgeAt.set(throttleKey, now);
 
   try {
     await ctx.exports.App.purgeCache(target);

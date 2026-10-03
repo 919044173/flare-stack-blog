@@ -3,9 +3,14 @@ import { m } from "@/paraglide/messages";
 interface ArchiveYearProps {
   year: number;
   count: number;
+  isMoment?: boolean;
 }
 
-export function ArchiveYear({ year, count }: ArchiveYearProps) {
+export function ArchiveYear({
+  year,
+  count,
+  isMoment = false,
+}: ArchiveYearProps) {
   return (
     <div className="flex flex-row w-full items-center h-15">
       <div className="w-[15%] md:w-[10%] transition text-2xl font-bold text-right fuwari-text-75">
@@ -18,7 +23,7 @@ export function ArchiveYear({ year, count }: ArchiveYearProps) {
         />
       </div>
       <div className="w-[70%] md:w-[80%] transition text-left fuwari-text-50">
-        {m.posts_count({ count })}
+        {isMoment ? m.moments_count({ count }) : m.posts_count({ count })}
       </div>
     </div>
   );

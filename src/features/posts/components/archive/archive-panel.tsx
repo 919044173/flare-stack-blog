@@ -4,9 +4,10 @@ import { ArchiveYear } from "./archive-year";
 
 interface ArchivePanelProps {
   posts: Array<PostItem>;
+  isMoment?: boolean; // ✅ 新增
 }
 
-export function ArchivePanel({ posts }: ArchivePanelProps) {
+export function ArchivePanel({ posts, isMoment = false }: ArchivePanelProps) {
   const groupedPosts = posts.reduce(
     (acc, post) => {
       if (!post.publishedAt) {
@@ -31,7 +32,7 @@ export function ArchivePanel({ posts }: ArchivePanelProps) {
         <div key={year}>
           <ArchiveYear year={year} count={groupedPosts[year].length} />
           {groupedPosts[year].map((post) => (
-            <ArchivePost key={post.id} post={post} />
+            <ArchivePost key={post.id} post={post} isMoment={isMoment} /> // ✅ 传下去
           ))}
         </div>
       ))}

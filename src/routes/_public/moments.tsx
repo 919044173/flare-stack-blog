@@ -105,6 +105,7 @@ function RouteComponent() {
       hasNextPage={hasNextPage}
       isFetchingNextPage={isFetchingNextPage}
       fetchNextPage={fetchNextPage}
+      isMoment={true}
     />
   );
 }

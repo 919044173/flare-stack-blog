@@ -37,7 +37,7 @@ export function PostCard({
 }: PostCardProps) {
   const tagNames = (post.tags ?? []).map((t) => t.name);
 
-  const hasCover = Boolean(post.cover) && !isMoment;
+  const hasCover = Boolean(post.cover);
   const coverWidth = "28%";
 
   return (

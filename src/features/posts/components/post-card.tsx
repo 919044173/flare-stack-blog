@@ -25,11 +25,19 @@ interface PostCardProps {
   post: PostItem;
   pinned?: boolean;
   popular?: boolean;
+  isMoment?: boolean; // ✅ 新增：标识是否为动态
 }
 
-export function PostCard({ post, pinned, popular }: PostCardProps) {
+export function PostCard({
+  post,
+  pinned,
+  popular,
+  isMoment = false, // ✅ 新增：默认为 false
+}: PostCardProps) {
   const tagNames = (post.tags ?? []).map((t) => t.name);
-  const hasCover = Boolean(post.cover);
+  
+  // ✅ 核心逻辑：如果是动态，强制不显示封面；否则按原来的判断
+  const hasCover = Boolean(post.cover) && !isMoment;
   const coverWidth = "28%";
 
   return (
@@ -41,17 +49,17 @@ export function PostCard({ post, pinned, popular }: PostCardProps) {
         className={`pl-6 md:pl-9 pr-6 md:pr-2 pt-6 md:pt-7 pb-6 relative ${
           hasCover
             ? "w-full md:w-[calc(100%_-_var(--coverWidth)_-_12px)]"
-            : "w-full md:w-[calc(100%_-_52px_-_12px)]"
+            : isMoment
+              ? "w-full" // ✅ 动态：占满整行
+              : "w-full md:w-[calc(100%_-_52px_-_12px)]" // 普通文章无封面
         }`}
       >
-        {(pinned || popular) && (
+        {/* 动态不显示置顶/热门徽章 */}
+        {!isMoment && (pinned || popular) && (
           <div className="flex items-center gap-1.5 font-medium text-sm mb-3">
             {pinned ? (
               <>
-                <Pin
-                  size={16}
-                  className="fill-current text-(--fuwari-primary)"
-                />
+                <Pin size={16} className="fill-current text-(--fuwari-primary)" />
                 <span className="text-(--fuwari-primary)">
                   {m.home_pinned_posts()}
                 </span>
@@ -67,10 +75,13 @@ export function PostCard({ post, pinned, popular }: PostCardProps) {
           </div>
         )}
 
+        {/* 标题：动态的标题小一号 */}
         <Link
           to="/post/$slug"
           params={{ slug: post.slug }}
-          className="transition group w-full block font-bold mb-3 text-3xl fuwari-text-90 hover:text-(--fuwari-primary) active:text-(--fuwari-primary) relative before:w-1 before:h-5 before:rounded-md before:absolute before:-left-5 before:top-1/2 before:-translate-y-1/2 before:hidden md:before:block before:bg-(--fuwari-primary)"
+          className={`transition group w-full block font-bold mb-3 fuwari-text-90 hover:text-(--fuwari-primary) active:text-(--fuwari-primary) relative before:w-1 before:h-5 before:rounded-md before:absolute before:-left-5 before:top-1/2 before:-translate-y-1/2 before:hidden md:before:block before:bg-(--fuwari-primary) ${
+            isMoment ? "text-2xl" : "text-3xl" // ✅ 动态标题小一点
+          }`}
         >
           {post.title}
           <ChevronRight className="inline-block md:hidden text-[2rem] text-(--fuwari-primary) align-middle -mt-1 ml-1" />
@@ -78,6 +89,7 @@ export function PostCard({ post, pinned, popular }: PostCardProps) {
         </Link>
 
         <div className="flex flex-wrap fuwari-text-50 items-center gap-4 gap-x-4 gap-y-2 mb-4">
+          {/* 日期：动态保留 */}
           <div className="flex items-center">
             <div className="fuwari-meta-icon">
               <Calendar size={20} strokeWidth={1.5} />
@@ -89,7 +101,9 @@ export function PostCard({ post, pinned, popular }: PostCardProps) {
               {formatPublicPostDate(post.publishedAt)}
             </time>
           </div>
-          {post.category ? (
+
+          {/* 分类：动态不显示 */}
+          {!isMoment && post.category ? (
             <div className="flex items-center">
               <div className="fuwari-meta-icon">
                 <BookOpen size={20} strokeWidth={1.5} />
@@ -103,7 +117,9 @@ export function PostCard({ post, pinned, popular }: PostCardProps) {
               </Link>
             </div>
           ) : null}
-          {tagNames.length > 0 && (
+
+          {/* 标签：动态不显示 */}
+          {!isMoment && tagNames.length > 0 && (
             <div className="hidden md:flex items-center">
               <div className="fuwari-meta-icon">
                 <Tag size={20} strokeWidth={1.5} />
@@ -130,30 +146,37 @@ export function PostCard({ post, pinned, popular }: PostCardProps) {
           )}
         </div>
 
+        {/* 摘要：动态显示更多行 */}
         <div
           className={`fuwari-text-75 pr-4 wrap-break-word ${
-            pinned
-              ? "mb-4 line-clamp-3 md:line-clamp-2 text-lg leading-relaxed"
-              : "mb-3.5 line-clamp-2 md:line-clamp-1"
+            isMoment
+              ? "mb-3.5 line-clamp-5 text-base leading-relaxed" // ✅ 动态显示 5 行
+              : pinned
+                ? "mb-4 line-clamp-3 md:line-clamp-2 text-lg leading-relaxed"
+                : "mb-3.5 line-clamp-2 md:line-clamp-1"
           }`}
         >
           {post.summary ?? ""}
         </div>
 
-        <div className="text-sm fuwari-text-50 flex items-center gap-4 [&_svg]:shrink-0">
-          <span className="inline-flex items-center gap-1.5">
-            <Clock size={14} />
-            {m.read_time({ count: post.readTimeInMinutes })}
-          </span>
-          {post.viewCount !== undefined && (
+        {/* 底部阅读时间/浏览量：动态隐藏 */}
+        {!isMoment && (
+          <div className="text-sm fuwari-text-50 flex items-center gap-4 [&_svg]:shrink-0">
             <span className="inline-flex items-center gap-1.5">
-              <Eye size={14} />
-              {m.post_views_count({ count: post.viewCount })}
+              <Clock size={14} />
+              {m.read_time({ count: post.readTimeInMinutes })}
             </span>
-          )}
-        </div>
+            {post.viewCount !== undefined && (
+              <span className="inline-flex items-center gap-1.5">
+                <Eye size={14} />
+                {m.post_views_count({ count: post.viewCount })}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
+      {/* 封面图：动态不显示封面 */}
       {hasCover && post.cover ? (
         <Link
           to="/post/$slug"
@@ -173,7 +196,8 @@ export function PostCard({ post, pinned, popular }: PostCardProps) {
             className="w-full h-full object-cover"
           />
         </Link>
-      ) : (
+      ) : !isMoment ? (
+        // 普通文章无封面时的右侧箭头按钮
         <Link
           to="/post/$slug"
           params={{ slug: post.slug }}
@@ -185,7 +209,7 @@ export function PostCard({ post, pinned, popular }: PostCardProps) {
             strokeWidth={2}
           />
         </Link>
-      )}
+      ) : null}
     </div>
   );
 }

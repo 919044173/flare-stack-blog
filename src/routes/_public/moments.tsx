@@ -66,7 +66,7 @@ export const Route = createFileRoute("/_public/moments")({
   }),
 });
 
-// 1. 骨架屏
+// 骨架屏
 function PostsSkeleton() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 animate-pulse">
@@ -89,13 +89,13 @@ function PostsSkeleton() {
   );
 }
 
-// 2. 核心组件
+// 核心组件
 function RouteComponent() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   
   const { data: tags } = useSuspenseQuery(tagsQueryOptions);
-  // ⚠️ 新增：获取站点配置，同步作者头像和信息
+  // 获取站点配置
   const { data: siteConfig } = useSuspenseQuery(siteConfigQuery);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
@@ -132,29 +132,30 @@ function RouteComponent() {
     <div className="max-w-3xl mx-auto px-4 py-8">
       {/* 
         头部博主信息区 
-        ⚠️ 已改为动态读取 siteConfig 中的作者信息
+        ⚠️ 改用与背景重叠的样式，视觉更舒服
       */}
-      <div className="relative flex items-end gap-4 mb-10 pb-6 border-b border-gray-100">
-        {/* 动态头像 */}
-        {siteConfig.authorAvatar ? (
-          <img
-            src={siteConfig.authorAvatar} // 从配置中读取头像
-            alt={siteConfig.authorName || "Author"}
-            className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-sm bg-white z-10"
-          />
-        ) : (
-          // 如果没有配置头像，显示一个默认的占位
-          <div className="w-20 h-20 rounded-full bg-blue-100 border-4 border-white flex items-center justify-center text-blue-500 text-2xl z-10">
-            {siteConfig.authorName?.charAt(0) || "A"}
-          </div>
-        )}
+      <div className="relative mb-12">
+        {/* 头像：绝对定位，制造重叠效果 */}
+        <div className="absolute -top-16 left-0">
+          {siteConfig.authorAvatar ? (
+            <img
+              src={siteConfig.authorAvatar} 
+              alt={siteConfig.authorName || "Author"}
+              className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md bg-white z-10"
+            />
+          ) : (
+            <div className="w-24 h-24 rounded-full bg-blue-100 border-4 border-white flex items-center justify-center text-blue-500 text-3xl shadow-md z-10">
+              {siteConfig.authorName?.charAt(0)?.toUpperCase() || "A"}
+            </div>
+          )}
+        </div>
         
-        <div className="pb-1">
-          {/* 动态昵称，添加白色和阴影保证在星空图上清晰可见 */}
-          <h1 className="text-3xl font-bold text-white drop-shadow-md">
+        {/* 文字区域：留出头像的空间 */}
+        <div className="ml-28 pt-2">
+          <h1 className="text-2xl font-bold text-gray-800">
             {siteConfig.authorName || "ay."}
           </h1>
-          <p className="text-sm text-gray-100 drop-shadow-sm mt-1">
+          <p className="text-sm text-gray-500 mt-1 line-clamp-2">
             {siteConfig.description || "记录生活，分享瞬间"}
           </p>
         </div>
@@ -183,12 +184,16 @@ function RouteComponent() {
             >
               <div className="bg-white rounded-2xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-gray-50 group-hover:shadow-lg group-hover:border-blue-100 transition-all duration-300">
                 
-                {/* 封面图 */}
+                {/* ⚠️ 修复：增加了图片加载错误处理，只有图片能加载时才显示 */}
                 {post.cover && (
-                  <div className="mb-4 overflow-hidden rounded-xl">
+                  <div className="mb-4 overflow-hidden rounded-xl bg-gray-50">
                     <img 
                       src={post.cover} 
                       alt={post.title || "动态图片"} 
+                      onError={(e) => {
+                        // 如果图片加载失败，隐藏外层包裹的 div
+                        (e.target as HTMLImageElement).parentElement!.style.display = 'none';
+                      }}
                       className="w-full h-auto max-h-[300px] object-cover group-hover:scale-[1.02] transition-transform duration-500"
                     />
                   </div>

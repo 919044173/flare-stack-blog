@@ -85,29 +85,28 @@ export function PublicLayout({
           marginTop: `calc(${bannerHeightVh}vh - ${MAIN_OVERLAP_REM}rem - ${NAVBAR_HEIGHT_REM}rem)`,
         }}
       >
+        {/* ✅ 修改点 1：彻底改用 Flex 布局，不再依赖容易出错的 Grid */}
         <div
           className={cn(
-            "public-content-grid relative mx-auto px-0 md:px-4 pb-8 grid gap-4",
+            "relative mx-auto px-0 md:px-4 pb-8",
             isFocusedPage
-              ? "grid-cols-1"
-              : "grid-cols-1 lg:grid-cols-[17.5rem_1fr]",
+              ? "flex flex-col"
+              : "flex flex-col lg:flex-row gap-4",
           )}
           style={{ maxWidth: "var(--fuwari-page-width)" }}
         >
+          {/* ✅ 修改点 2：侧边栏容器固定宽度，强制它在左侧 */}
           {isFocusedPage ? null : (
-            <Sidebar 
-              // ✅ 修改了这里：添加了 lg:col-start-1 lg:row-start-1，强制它出现在左侧
-              className="public-sidebar order-2 lg:order-1 lg:col-start-1 lg:row-start-1" 
-            />
+            <div className="order-2 lg:order-1 w-full lg:w-[17.5rem] shrink-0">
+              <Sidebar />
+            </div>
           )}
 
+          {/* ✅ 修改点 3：文章列表占满剩余空间 */}
           <main
             className={cn(
-              "flex flex-col gap-4 min-w-0",
-              isFocusedPage 
-                ? "" 
-                // ✅ 修改了这里：添加了 lg:col-start-2 lg:row-start-1，强制它占据右侧主区域
-                : "order-1 lg:order-2 lg:col-start-2 lg:row-start-1",
+              "flex flex-col gap-4 min-w-0 flex-1",
+              isFocusedPage ? "" : "order-1 lg:order-2",
             )}
           >
             <PageFade includeSearch={location.pathname !== "/search"}>
@@ -115,13 +114,11 @@ export function PublicLayout({
             </PageFade>
           </main>
 
+          {/* ✅ 修改点 4：页脚在手机端排在最后，电脑端保持在文章列表下方 */}
           <div
             className={cn(
               "public-footer fuwari-onload-animation mt-auto",
-              isFocusedPage 
-                ? "" 
-                // ✅ 修改了这里：添加了 lg:col-start-2 lg:row-start-2，让页脚紧跟在文章列表下方
-                : "order-3 lg:col-start-2 lg:row-start-2",
+              isFocusedPage ? "" : "order-3 w-full",
             )}
             style={{ animationDelay: "250ms" }}
           >

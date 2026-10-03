@@ -4,6 +4,9 @@ import { ms } from "@/lib/duration";
 import { serializeKey } from "./serialize";
 import type { CacheKey } from "./types";
 
+// 防止缓存击穿：同一 key 的并发请求复用同一个 Promise
+const inFlightRemember = new Map<string, Promise<unknown>>();
+
 export async function get(
   context: BaseContext,
   key: CacheKey,
@@ -75,28 +78,44 @@ export async function remember<T extends z.ZodTypeAny>(
   const { ttl = "1h" } = options;
   const serializedKey = serializeKey(key);
 
-  const stored = await context.env.KV.get(serializedKey, "json").catch((err) =>
-    console.error(
-      JSON.stringify({
-        message: "kv store remember get failed",
-        key: serializedKey,
-        error: String(err),
-      }),
-    ),
-  );
-
-  if (stored !== null && stored !== undefined) {
-    const result = schema.safeParse(stored);
-    if (result.success) {
-      return result.data;
-    }
+  // 1. 并发合并：同一 key 已有在途请求 → 直接复用
+  const pending = inFlightRemember.get(serializedKey);
+  if (pending) {
+    return pending as Promise<z.infer<T>>;
   }
 
-  const data = await fetcher();
-  if (data === null || data === undefined) return data;
+  // 2. 构建整个读取 + 回写逻辑为一个 Promise
+  const promise = (async () => {
+    const stored = await context.env.KV.get(serializedKey, "json").catch(
+      (err) =>
+        console.error(
+          JSON.stringify({
+            message: "kv store remember get failed",
+            key: serializedKey,
+            error: String(err),
+          }),
+        ),
+    );
 
-  context.executionCtx.waitUntil(
-    put(context, key, JSON.stringify(data), { ttl }),
-  );
-  return data;
+    if (stored !== null && stored !== undefined) {
+      const result = schema.safeParse(stored);
+      if (result.success) return result.data;
+    }
+
+    const data = await fetcher();
+    if (data === null || data === undefined) return data;
+
+    context.executionCtx.waitUntil(
+      put(context, key, JSON.stringify(data), { ttl }),
+    );
+    return data;
+  })();
+
+  // 3. 存入 Map，请求结束后清理
+  inFlightRemember.set(serializedKey, promise);
+  promise.finally(() => {
+    inFlightRemember.delete(serializedKey);
+  });
+
+  return promise as Promise<z.infer<T>>;
 }

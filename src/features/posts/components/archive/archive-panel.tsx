@@ -4,7 +4,7 @@ import { ArchiveYear } from "./archive-year";
 
 interface ArchivePanelProps {
   posts: Array<PostItem>;
-  isMoment?: boolean; // ✅ 新增
+  isMoment?: boolean;
 }
 
 export function ArchivePanel({ posts, isMoment = false }: ArchivePanelProps) {
@@ -31,9 +31,20 @@ export function ArchivePanel({ posts, isMoment = false }: ArchivePanelProps) {
       {years.map((year) => (
         <div key={year}>
           <ArchiveYear year={year} count={groupedPosts[year].length} />
-          {groupedPosts[year].map((post) => (
-            <ArchivePost key={post.id} post={post} isMoment={isMoment} /> // ✅ 传下去
-          ))}
+
+          {isMoment ? (
+            // ✅ 动态模式：竖向卡片列表，间距更大
+            <div className="flex flex-col gap-2 mt-2">
+              {groupedPosts[year].map((post) => (
+                <ArchivePost key={post.id} post={post} isMoment={isMoment} />
+              ))}
+            </div>
+          ) : (
+            // 文章模式：保持原样
+            groupedPosts[year].map((post) => (
+              <ArchivePost key={post.id} post={post} isMoment={isMoment} />
+            ))
+          )}
         </div>
       ))}
     </div>

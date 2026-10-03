@@ -5,6 +5,7 @@ import {
   ACCEPTED_IMAGE_TYPES,
   MAX_FILE_SIZE,
 } from "@/features/media/media.schema";
+import { compressImage } from "@/features/media/utils/compress-image";
 import { orpc, orpcClient } from "@/lib/orpc";
 import { m } from "@/paraglide/messages";
 
@@ -31,17 +32,39 @@ export function useMediaUpload() {
     setProgress({ current: 0, total: images.length });
     try {
       for (let i = 0; i < images.length; i++) {
-        const file = images[i];
+        const original = images[i];
         setProgress({ current: i + 1, total: images.length });
+
+        // 1. 压缩（失败自动退回原文件）
+        let file = original;
+        try {
+          const result = await compressImage(original);
+          file = result.file;
+
+          if (result.compressed) {
+            console.log(
+              `[media-upload] ${(result.originalSize / 1024).toFixed(0)}KB → ` +
+                `${(result.compressedSize / 1024).toFixed(0)}KB ` +
+                `(${result.originalWidth}x${result.originalHeight} → ` +
+                `${result.width}x${result.height})`,
+            );
+          }
+        } catch (err) {
+          console.warn("[media-upload] compress failed, using original", err);
+        }
+
+        // 2. 体积校验（用压缩后的文件判断）
         if (file.size > MAX_FILE_SIZE) {
           toast.error(m.media_validation_file_too_large());
           continue;
         }
+
+        // 3. 上传压缩后的文件
         try {
           await uploadMutation.mutateAsync(file);
           toast.success(m.media_upload_success());
         } catch {
-          toast.error(m.media_upload_fail({ name: file.name }));
+          toast.error(m.media_upload_fail({ name: original.name }));
         }
       }
       await queryClient.invalidateQueries({ queryKey: orpc.media.key() });

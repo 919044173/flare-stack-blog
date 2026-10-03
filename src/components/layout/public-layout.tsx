@@ -95,13 +95,19 @@ export function PublicLayout({
           style={{ maxWidth: "var(--fuwari-page-width)" }}
         >
           {isFocusedPage ? null : (
-            <Sidebar className="public-sidebar order-2 lg:order-1" />
+            <Sidebar 
+              // ✅ 修改了这里：添加了 lg:col-start-1 lg:row-start-1，强制它出现在左侧
+              className="public-sidebar order-2 lg:order-1 lg:col-start-1 lg:row-start-1" 
+            />
           )}
 
           <main
             className={cn(
               "flex flex-col gap-4 min-w-0",
-              isFocusedPage ? "" : "order-1 lg:order-2",
+              isFocusedPage 
+                ? "" 
+                // ✅ 修改了这里：添加了 lg:col-start-2 lg:row-start-1，强制它占据右侧主区域
+                : "order-1 lg:order-2 lg:col-start-2 lg:row-start-1",
             )}
           >
             <PageFade includeSearch={location.pathname !== "/search"}>
@@ -112,7 +118,10 @@ export function PublicLayout({
           <div
             className={cn(
               "public-footer fuwari-onload-animation mt-auto",
-              isFocusedPage ? "" : "order-3 lg:col-start-2",
+              isFocusedPage 
+                ? "" 
+                // ✅ 修改了这里：添加了 lg:col-start-2 lg:row-start-2，让页脚紧跟在文章列表下方
+                : "order-3 lg:col-start-2 lg:row-start-2",
             )}
             style={{ animationDelay: "250ms" }}
           >

@@ -85,27 +85,22 @@ export function PublicLayout({
           marginTop: `calc(${bannerHeightVh}vh - ${MAIN_OVERLAP_REM}rem - ${NAVBAR_HEIGHT_REM}rem)`,
         }}
       >
-        {/* ✅ 终极方案：完全放弃 public-content-grid 类名，用纯 Flex + !important */}
         <div
           className={cn(
-            "relative mx-auto px-0 md:px-4 pb-8",
+            "public-content-grid relative mx-auto px-0 md:px-4 pb-8 grid gap-4",
             isFocusedPage
-              ? "!flex !flex-col"
-              : "!flex !flex-col lg:!flex-row gap-4",
+              ? "grid-cols-1"
+              : "grid-cols-1 lg:grid-cols-[17.5rem_1fr]",
           )}
           style={{ maxWidth: "var(--fuwari-page-width)" }}
         >
-          {/* 侧边栏（左侧栏，手机端在底部） */}
           {isFocusedPage ? null : (
-            <div className="order-2 lg:order-1 w-full lg:w-[17.5rem] shrink-0">
-              <Sidebar />
-            </div>
+            <Sidebar className="public-sidebar order-2 lg:order-1" />
           )}
 
-          {/* 文章列表（右侧主区域） */}
           <main
             className={cn(
-              "flex flex-col gap-4 min-w-0 flex-1",
+              "flex flex-col gap-4 min-w-0",
               isFocusedPage ? "" : "order-1 lg:order-2",
             )}
           >
@@ -114,11 +109,10 @@ export function PublicLayout({
             </PageFade>
           </main>
 
-          {/* 页脚（右侧主区域下方） */}
           <div
             className={cn(
               "public-footer fuwari-onload-animation mt-auto",
-              isFocusedPage ? "" : "order-3 w-full",
+              isFocusedPage ? "" : "order-3 lg:col-start-2",
             )}
             style={{ animationDelay: "250ms" }}
           >

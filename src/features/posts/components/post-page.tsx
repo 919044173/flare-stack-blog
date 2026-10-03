@@ -1,157 +1,97 @@
-import { ClientOnly, Link } from "@tanstack/react-router";
-import { Clock, FileText, Pencil } from "lucide-react";
-import {
-  getPublicImageSrc,
-  PUBLIC_IMAGE_WIDTH,
-} from "@/features/media/utils/media.utils";
-import { CommentSection } from "@/features/comments/components/comment-section";
-import { ContentRenderer } from "@/features/posts/components/content/content-renderer";
-import type { PostWithToc } from "@/features/posts/schema/posts.schema";
-import { authClient } from "@/lib/auth/auth.client";
+import { useEffect, useRef } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { PostItem } from "@/features/posts/schema/posts.schema";
+import type { TagWithCount } from "@/features/tags/tags.schema";
 import { m } from "@/paraglide/messages";
-import ZoomableImage from "./content/zoomable-image";
-import { PostAdjacentNav } from "./post-adjacent-nav";
-import { PostMeta } from "./post-meta";
-import { PostSummary } from "./post-summary";
-import TableOfContents from "./table-of-contents";
+import { ArchivePanel } from "./archive/archive-panel";
 
-interface PostPageProps {
-  post: Exclude<PostWithToc, null>;
+export const POSTS_PER_PAGE = 24;
+
+interface PostsPageProps {
+  posts: Array<PostItem>;
+  tags: Array<Omit<TagWithCount, "createdAt">>;
+  selectedTag?: string;
+  onTagClick: (tag?: string) => void;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  fetchNextPage: () => void;
+  isMoment?: boolean; // ✅ 新增：标识是否为动态页面
 }
 
-function enterDelay(extraMs: number) {
-  return `calc(var(--fuwari-content-delay) + ${extraMs}ms * var(--fuwari-stagger, 1))`;
-}
+export function PostsPage({
+  posts,
+  hasNextPage,
+  isFetchingNextPage,
+  fetchNextPage,
+  isMoment = false, // ✅ 新增：默认值为 false
+}: PostsPageProps) {
+  const observerRef = useRef<HTMLDivElement>(null);
 
-export function PostPage({ post }: PostPageProps) {
-  const { data: session } = authClient.useSession();
-  // Approximate word count
-  const wordCount = post.readTimeInMinutes * 300;
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1, rootMargin: "0px" },
+    );
+
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
-    <div className="relative flex flex-col rounded-(--fuwari-radius-large) py-1 md:py-0 md:bg-transparent gap-4 mb-4 w-full">
-      <TableOfContents headers={post.toc} />
+    <div
+      className="fuwari-onload-animation flex flex-col gap-4"
+      style={{ animationDelay: "var(--fuwari-content-delay)" }}
+    >
+      {/* ✅ 把 isMoment 传递给 ArchivePanel */}
+      {posts.length > 0 && (
+        <ArchivePanel posts={posts} isMoment={isMoment} />
+      )}
 
-      {/* Main Post Container */}
-      <div className="fuwari-card-base z-10 px-6 md:px-9 pt-6 pb-4 relative w-full">
-        {/* Word count and reading time */}
-        <div
-          className="flex flex-row flex-wrap fuwari-text-30 gap-5 mb-3 transition fuwari-onload-animation"
-          style={{ animationDelay: enterDelay(0) }}
-        >
-          <div className="flex flex-row items-center">
-            <div className="transition h-6 w-6 rounded-md bg-black/5 dark:bg-white/10 fuwari-text-50 flex items-center justify-center mr-2">
-              <FileText strokeWidth={1.5} size={16} />
-            </div>
-            <div className="text-sm">
-              {m.post_word_count({ count: wordCount })}
-            </div>
-          </div>
-          <div className="flex flex-row items-center">
-            <div className="transition h-6 w-6 rounded-md bg-black/5 dark:bg-white/10 fuwari-text-50 flex items-center justify-center mr-2">
-              <Clock strokeWidth={1.5} size={16} />
-            </div>
-            <div className="text-sm">
-              {m.read_time({ count: post.readTimeInMinutes })}
-            </div>
-          </div>
-          <ClientOnly>
-            {session?.user.role === "admin" && (
-              <Link
-                to="/admin/posts/edit/$id"
-                params={{ id: String(post.id) }}
-                className="flex flex-row items-center fuwari-text-30 hover:fuwari-text-90 transition animate-in fade-in duration-500"
+      {/* Infinite Scroll trigger and loading indicator */}
+      <div
+        ref={observerRef}
+        className="flex flex-col items-center justify-center pt-2 pb-8"
+      >
+        {isFetchingNextPage ? (
+          <div className="fuwari-card-base w-full px-8 py-6 opacity-70 animate-pulse">
+            {/* Inline Mini Skeleton for appending items */}
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-10 w-full rounded-lg flex flex-row justify-start items-center"
               >
-                <div className="transition h-6 w-6 rounded-md bg-black/5 dark:bg-white/10 fuwari-text-50 flex items-center justify-center mr-2">
-                  <Pencil strokeWidth={1.5} size={16} />
+                <div className="w-[15%] md:w-[10%] flex justify-end pr-2">
+                  <Skeleton className="h-4 w-10 bg-black/10 dark:bg-white/10" />
                 </div>
-                <div className="text-sm">{m.post_edit()}</div>
-              </Link>
-            )}
-          </ClientOnly>
-        </div>
-
-        {/* Title */}
-        <div
-          className="relative fuwari-onload-animation"
-          style={{ animationDelay: enterDelay(50) }}
-        >
-          <h1
-            className="transition w-full block font-bold mb-3
-              text-3xl md:text-[2.25rem]/[2.75rem]
-              fuwari-text-90
-              md:before:w-1 before:h-5 before:rounded-md before:bg-(--fuwari-primary)
-              before:absolute before:top-3 before:-left-4.5"
-            style={{ viewTransitionName: `post-title-${post.slug}` }}
-          >
-            {post.title}
-          </h1>
-        </div>
-
-        {/* Metadata */}
-        <div
-          className="fuwari-onload-animation"
-          style={{
-            animationDelay: enterDelay(100),
-          }}
-        >
-          <PostMeta post={post} className="mb-5" />
-          {!post.cover && (
-            <div className="border-(--fuwari-meta-divider) border-dashed border-b mb-5" />
-          )}
-        </div>
-
-        {post.cover && (
-          <div
-            id="post-cover"
-            className="mb-8 rounded-xl overflow-hidden fuwari-onload-animation"
-            style={{
-              animationDelay: enterDelay(175),
-            }}
-          >
-            <ZoomableImage
-              src={getPublicImageSrc(post.cover.url, PUBLIC_IMAGE_WIDTH.cover)}
-              alt={post.title}
-              width={post.cover.width ?? undefined}
-              height={post.cover.height ?? undefined}
-              className="w-full h-auto object-cover"
-              loading="eager"
-              fetchPriority="high"
-            />
+                <div className="w-[15%] md:w-[10%] relative h-full flex items-center before:absolute before:w-1 left-1/2 -ml-0.5 pointer-events-none before:border-l-2 before:border-dashed before:border-black/5 dark:before:border-white/5 before:-top-5 before:bottom-0 before:h-20 z-0">
+                  <div className="mx-auto w-2 h-2 rounded-full bg-black/20 dark:bg-white/20 z-10" />
+                </div>
+                <div className="w-[70%] md:max-w-[65%] md:w-[65%] flex justify-start pl-2">
+                  <Skeleton className="h-5 w-3/4 max-w-50 bg-black/10 dark:bg-white/10" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : hasNextPage ? (
+          <div className="h-px w-24 bg-black/10 dark:bg-white/10"></div>
+        ) : posts.length > 0 ? (
+          <div className="flex items-center gap-4 text-black/20 dark:text-white/20 mt-4">
+            <span className="h-px w-12 bg-current" />
+            <span className="text-sm font-bold italic">{m.posts_end()}</span>
+            <span className="h-px w-12 bg-current" />
+          </div>
+        ) : (
+          <div className="fuwari-card-base w-full px-8 py-12 text-center text-sm fuwari-text-50">
+            {m.posts_no_posts()}
           </div>
         )}
-
-        {/* Summary */}
-        <PostSummary summary={post.summary} />
-
-        {/* Markdown Content */}
-        <div
-          className="fuwari-onload-animation"
-          style={{
-            animationDelay: enterDelay(325),
-          }}
-        >
-          <div className="mb-6 prose dark:prose-invert prose-base max-w-none! fuwari-custom-md">
-            <ContentRenderer content={post.contentJson} />
-          </div>
-          <div className="my-8 flex items-center justify-center w-full">
-            <div className="h-px w-full bg-linear-to-r from-transparent via-(--fuwari-meta-divider) to-transparent opacity-20" />
-            <span className="mx-4 text-sm font-mono tracking-widest text-(--fuwari-meta-divider) opacity-50 whitespace-nowrap">
-              END
-            </span>
-            <div className="h-px w-full bg-linear-to-r from-(--fuwari-meta-divider) via-transparent to-transparent opacity-20" />
-          </div>
-        </div>
-      </div>
-
-      <PostAdjacentNav slug={post.slug} />
-
-      {/* Comments Section */}
-      <div
-        className="fuwari-card-base p-6 fuwari-onload-animation"
-        style={{ animationDelay: enterDelay(450) }}
-      >
-        <CommentSection postId={post.id} />
       </div>
     </div>
   );

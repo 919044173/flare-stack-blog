@@ -9,7 +9,6 @@ import type {
 } from "./types";
 import { purgeWorkersCache } from "./workers-cache";
 import { purgeOptionsFor } from "./workers-cache-policy";
-
 type InvalidateContext = BaseContext & {
   executionCtx: ExecutionContext;
 };
@@ -53,6 +52,8 @@ type RegisteredEntry = {
 };
 
 const registry: RegisteredEntry[] = [];
+
+const inFlightRequests = new Map<string, Promise<unknown>>();
 
 async function readGeneration(
   context: InvalidateContext,

@@ -44,6 +44,14 @@
       }
     }
   ],
+  "moments_count": [
+    {
+      "declarations": ["input count", "local formattedCountZh = count: number"],
+      "match": {
+        "count=*": "{formattedCountZh} 条动态"
+      }
+    }
+  ],
   "format_month_day": [
     {
       "declarations": ["input date", "local formattedDateZh = date: datetime month=2-digit day=2-digit"],

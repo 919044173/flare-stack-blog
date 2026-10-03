@@ -31,23 +31,25 @@ export function ArchivePanel({ posts, isMoment = false }: ArchivePanelProps) {
       {years.map((year) => (
         <div key={year}>
           <ArchiveYear
-           year={year}
-           count={groupedPosts[year].length}
-           isMoment={isMoment}
-           />
+            year={year}
+            count={groupedPosts[year].length}
+            isMoment={isMoment}
+          />
 
           {isMoment ? (
-            // ✅ 动态模式：竖向卡片列表，卡片间有间距
+            // 动态模式：竖向卡片列表
             <div className="flex flex-col gap-4 mt-3">
               {groupedPosts[year].map((post) => (
                 <ArchivePost key={post.id} post={post} isMoment={isMoment} />
               ))}
             </div>
           ) : (
-            // ✅ 文章模式：保持原样（一行一条，走时间轴）
-            groupedPosts[year].map((post) => (
-              <ArchivePost key={post.id} post={post} isMoment={isMoment} />
-            ))
+            // 文章模式：保留时间轴（每条之间有小间距）
+            <div className="flex flex-col gap-1 mt-1">
+              {groupedPosts[year].map((post) => (
+                <ArchivePost key={post.id} post={post} isMoment={isMoment} />
+              ))}
+            </div>
           )}
         </div>
       ))}

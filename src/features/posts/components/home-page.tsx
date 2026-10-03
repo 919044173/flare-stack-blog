@@ -33,6 +33,7 @@ export function HomePage({
               post={post}
               pinned={Boolean(post.pinnedAt)}
               popular={!post.pinnedAt && popularSlugs.has(post.slug)}
+              isMoment={post.category?.name === "动态"}
             />
             {i < posts.length - 1 && (
               <div className="border-t border-dashed mx-6 border-black/10 dark:border-white/15 md:hidden" />

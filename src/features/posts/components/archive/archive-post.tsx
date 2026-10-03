@@ -4,9 +4,10 @@ import { formatPublicPostDate } from "@/features/posts/utils/format-public-post-
 
 interface ArchivePostProps {
   post: PostItem;
+  isMoment?: boolean; // ✅ 新增
 }
 
-export function ArchivePost({ post }: ArchivePostProps) {
+export function ArchivePost({ post, isMoment = false }: ArchivePostProps) {
   const date = post.publishedAt ? new Date(post.publishedAt) : null;
 
   return (
@@ -24,31 +25,37 @@ export function ArchivePost({ post }: ArchivePostProps) {
           </time>
         </div>
 
-        {/* Dot and Line */}
-        <div className="w-[15%] md:w-[10%] relative fuwari-timeline-dash h-full flex items-center">
-          <div
-            className="transition-all mx-auto w-1 h-1 rounded group-hover:h-5
-              bg-black/50 dark:bg-white/50 group-hover:bg-(--fuwari-primary)
-              outline z-50
-              outline-(--fuwari-card-bg)
-              group-hover:outline-(--fuwari-btn-plain-bg-hover)
-              group-active:outline-(--fuwari-btn-plain-bg-active)"
-          />
-        </div>
+        {/* Dot and Line：动态模式下不显示时间轴的圆点 */}
+        {!isMoment && (
+          <div className="w-[15%] md:w-[10%] relative fuwari-timeline-dash h-full flex items-center">
+            <div
+              className="transition-all mx-auto w-1 h-1 rounded group-hover:h-5
+                bg-black/50 dark:bg-white/50 group-hover:bg-(--fuwari-primary)
+                outline z-50
+                outline-(--fuwari-card-bg)
+                group-hover:outline-(--fuwari-btn-plain-bg-hover)
+                group-active:outline-(--fuwari-btn-plain-bg-active)"
+            />
+          </div>
+        )}
 
-        {/* Post Title */}
+        {/* Post Title：动态模式下加粗一点，并且占据更多宽度 */}
         <div
-          className="w-[70%] md:max-w-[65%] md:w-[65%] text-left font-bold
-            group-hover:translate-x-1 transition-all group-hover:text-(--fuwari-primary)
-            fuwari-text-75 pr-8 whitespace-nowrap overflow-ellipsis overflow-hidden"
+          className={`text-left font-bold group-hover:translate-x-1 transition-all group-hover:text-(--fuwari-primary) fuwari-text-75 pr-8 whitespace-nowrap overflow-ellipsis overflow-hidden ${
+            isMoment
+              ? "w-[85%] md:w-[80%] text-base" // ✅ 动态：占满剩余宽度，字体稍大
+              : "w-[70%] md:max-w-[65%] md:w-[65%]" // 普通文章
+          }`}
         >
           {post.title}
         </div>
 
-        {/* Tag List */}
-        <div className="hidden md:block md:w-[15%] text-left text-sm transition whitespace-nowrap overflow-ellipsis overflow-hidden fuwari-text-30">
-          {post.tags?.map((t) => `#${t.name}`).join(" ")}
-        </div>
+        {/* Tag List：动态模式下不显示标签 */}
+        {!isMoment && (
+          <div className="hidden md:block md:w-[15%] text-left text-sm transition whitespace-nowrap overflow-ellipsis overflow-hidden fuwari-text-30">
+            {post.tags?.map((t) => `#${t.name}`).join(" ")}
+          </div>
+        )}
       </div>
     </Link>
   );

@@ -5,6 +5,7 @@ import { resolveSystemConfig } from "@/features/config/config.resolve";
 
 export const systemConfig = defineEntry({
   name: "config.system",
+  namespace: "config:system",
   key: (_params: Record<string, never>) => ["system"],
   schema: SystemConfigSchema,
   ttl: "1h",

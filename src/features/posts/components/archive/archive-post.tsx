@@ -4,15 +4,17 @@ import { formatPublicPostDate } from "@/features/posts/utils/format-public-post-
 
 interface ArchivePostProps {
   post: PostItem;
-  isMoment?: boolean; // ✅ 动态模式标识
+  isMoment?: boolean;
 }
 
 export function ArchivePost({ post, isMoment = false }: ArchivePostProps) {
   const date = post.publishedAt ? new Date(post.publishedAt) : null;
 
   // ⚠️ 把 post.cover 换成你实际的封面字段名
-  //    常见命名：cover / coverUrl / image / thumbnail
   const cover = post.cover;
+
+  // ✅ 临时调试：确认组件被渲染，以及 isMoment 和 cover 的值
+  console.log("ArchivePost 渲染:", { isMoment, cover, post });
 
   return (
     <Link
@@ -55,7 +57,7 @@ export function ArchivePost({ post, isMoment = false }: ArchivePostProps) {
           </div>
         )}
 
-        {/* Post Title：完全保持你原来的写法，文章页不受任何影响 */}
+        {/* Post Title */}
         <div
           className={`text-left font-bold group-hover:translate-x-1 transition-all group-hover:text-(--fuwari-primary) fuwari-text-75 pr-8 whitespace-nowrap overflow-ellipsis overflow-hidden ${
             isMoment

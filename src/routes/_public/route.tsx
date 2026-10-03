@@ -45,6 +45,7 @@ function PublicLayout() {
   const navOptions = [
     { id: "home", label: m.nav_home(), href: "/", external: false },
     { id: "posts", label: m.nav_posts(), href: "/posts", external: false },
+    { id: "moments", label: "动态", href: "/moments", external: false },
     {
       id: "friend-links",
       label: m.nav_friend_links(),

@@ -6,6 +6,7 @@ import {
   Clock,
   Eye,
   Flame,
+  MessageCircle,
   Pin,
   Tag,
 } from "lucide-react";
@@ -25,18 +26,17 @@ interface PostCardProps {
   post: PostItem;
   pinned?: boolean;
   popular?: boolean;
-  isMoment?: boolean; // ✅ 新增：标识是否为动态
+  isMoment?: boolean;
 }
 
 export function PostCard({
   post,
   pinned,
   popular,
-  isMoment = false, // ✅ 新增：默认为 false
+  isMoment = false,
 }: PostCardProps) {
   const tagNames = (post.tags ?? []).map((t) => t.name);
-  
-  // ✅ 核心逻辑：如果是动态，强制不显示封面；否则按原来的判断
+
   const hasCover = Boolean(post.cover) && !isMoment;
   const coverWidth = "28%";
 
@@ -50,11 +50,11 @@ export function PostCard({
           hasCover
             ? "w-full md:w-[calc(100%_-_var(--coverWidth)_-_12px)]"
             : isMoment
-              ? "w-full" // ✅ 动态：占满整行
-              : "w-full md:w-[calc(100%_-_52px_-_12px)]" // 普通文章无封面
+              ? "w-full"
+              : "w-full md:w-[calc(100%_-_52px_-_12px)]"
         }`}
       >
-        {/* 动态不显示置顶/热门徽章 */}
+        {/* 置顶 / 热门徽章 */}
         {!isMoment && (pinned || popular) && (
           <div className="flex items-center gap-1.5 font-medium text-sm mb-3">
             {pinned ? (
@@ -75,12 +75,12 @@ export function PostCard({
           </div>
         )}
 
-        {/* 标题：动态的标题小一号 */}
+        {/* 标题 */}
         <Link
           to="/post/$slug"
           params={{ slug: post.slug }}
           className={`transition group w-full block font-bold mb-3 fuwari-text-90 hover:text-(--fuwari-primary) active:text-(--fuwari-primary) relative before:w-1 before:h-5 before:rounded-md before:absolute before:-left-5 before:top-1/2 before:-translate-y-1/2 before:hidden md:before:block before:bg-(--fuwari-primary) ${
-            isMoment ? "text-2xl" : "text-3xl" // ✅ 动态标题小一点
+            isMoment ? "text-2xl" : "text-3xl"
           }`}
         >
           {post.title}
@@ -89,7 +89,7 @@ export function PostCard({
         </Link>
 
         <div className="flex flex-wrap fuwari-text-50 items-center gap-4 gap-x-4 gap-y-2 mb-4">
-          {/* 日期：动态保留 */}
+          {/* 日期 */}
           <div className="flex items-center">
             <div className="fuwari-meta-icon">
               <Calendar size={20} strokeWidth={1.5} />
@@ -102,7 +102,17 @@ export function PostCard({
             </time>
           </div>
 
-          {/* 分类：动态不显示 */}
+          {/* ✅ 动态模式：显示聊天气泡 + "动态" */}
+          {isMoment && (
+            <div className="flex items-center">
+              <div className="fuwari-meta-icon">
+                <MessageCircle size={20} strokeWidth={1.5} />
+              </div>
+              <span className="text-sm font-medium">动态</span>
+            </div>
+          )}
+
+          {/* 文章分类：仅文章模式 */}
           {!isMoment && post.category ? (
             <div className="flex items-center">
               <div className="fuwari-meta-icon">
@@ -118,7 +128,7 @@ export function PostCard({
             </div>
           ) : null}
 
-          {/* 标签：动态不显示 */}
+          {/* 标签：仅文章模式 */}
           {!isMoment && tagNames.length > 0 && (
             <div className="hidden md:flex items-center">
               <div className="fuwari-meta-icon">
@@ -146,11 +156,11 @@ export function PostCard({
           )}
         </div>
 
-        {/* 摘要：动态显示更多行 */}
+        {/* 摘要 */}
         <div
           className={`fuwari-text-75 pr-4 wrap-break-word ${
             isMoment
-              ? "mb-3.5 line-clamp-5 text-base leading-relaxed" // ✅ 动态显示 5 行
+              ? "mb-3.5 line-clamp-5 text-base leading-relaxed"
               : pinned
                 ? "mb-4 line-clamp-3 md:line-clamp-2 text-lg leading-relaxed"
                 : "mb-3.5 line-clamp-2 md:line-clamp-1"
@@ -159,7 +169,7 @@ export function PostCard({
           {post.summary ?? ""}
         </div>
 
-        {/* 底部阅读时间/浏览量：动态隐藏 */}
+        {/* 阅读时间 / 浏览量：仅文章模式 */}
         {!isMoment && (
           <div className="text-sm fuwari-text-50 flex items-center gap-4 [&_svg]:shrink-0">
             <span className="inline-flex items-center gap-1.5">
@@ -176,7 +186,7 @@ export function PostCard({
         )}
       </div>
 
-      {/* 封面图：动态不显示封面 */}
+      {/* 封面图 */}
       {hasCover && post.cover ? (
         <Link
           to="/post/$slug"
@@ -197,7 +207,6 @@ export function PostCard({
           />
         </Link>
       ) : !isMoment ? (
-        // 普通文章无封面时的右侧箭头按钮
         <Link
           to="/post/$slug"
           params={{ slug: post.slug }}

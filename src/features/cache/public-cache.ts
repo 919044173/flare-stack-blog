@@ -1,3 +1,5 @@
+// src/features/cache/public-cache.ts
+
 import type { z } from "zod";
 import type { Duration } from "@/lib/duration";
 import { ms } from "@/lib/duration";
@@ -63,6 +65,18 @@ const inFlightRequests = new Map<string, Promise<unknown>>();
 const KV_WRITE_LIMIT = 20;
 const KV_WRITE_WINDOW_MS = 60 * 1000;
 
+/**
+ * 生成一个随机的 cache generation 字符串。
+ * crypto.randomUUID 在部分环境不可用时，退化为时间戳 + 随机串。
+ */
+function newGeneration(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+}
+
 async function readGeneration(
   context: InvalidateContext,
   namespace: string,
@@ -120,10 +134,9 @@ async function bumpGeneration(
     return;
   }
 
-  const generation = crypto.randomUUID();
-
+  // 3. 写 KV —— 失败也不抛错，避免缓存层故障拖垮业务
   try {
-    await context.env.KV.put(key, generation, {
+    await context.env.KV.put(key, newGeneration(), {
       // 版本号自带 TTL，避免旧 key 长期占用空间
       expirationTtl: 60 * 60 * 24 * 30,
     });
@@ -135,7 +148,6 @@ async function bumpGeneration(
         error: String(err),
       }),
     );
-    throw err;
   }
 }
 
@@ -182,6 +194,7 @@ async function deleteStorageKey(
     return;
   }
 
+  // 3. 删除 KV —— 失败也不抛错
   await context.env.KV.delete(serializedKey).catch((err) =>
     console.error(
       JSON.stringify({
@@ -229,6 +242,7 @@ async function readEntry<T>(
     );
 
     const persist = async (value: unknown) => {
+      // 读路径的缓存回写：失败也不抛错
       await context.env.KV.put(serializedKey, JSON.stringify(value), {
         expirationTtl: Math.floor(ms(entry.ttl) / 1000),
       }).catch((err) =>
@@ -306,6 +320,7 @@ async function invalidateEntry(
  * 优化点：
  * 1. 先计算所有目标 key，去重后执行，避免同一 key 被重复 delete。
  * 2. reason 级令牌桶 + key 级最小间隔节流，连点保存不会打爆 KV。
+ * 3. 所有 KV 写操作都不会抛错，缓存层故障不影响业务。
  */
 async function run(
   reason: PublicCacheReason,

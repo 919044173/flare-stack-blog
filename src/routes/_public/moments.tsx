@@ -18,7 +18,7 @@ import { tagsQueryOptions } from "@/features/tags/queries";
 import { buildCanonicalUrl, canonicalLink } from "@/lib/seo";
 import { m } from "@/paraglide/messages";
 
-const MOMENTS_CATEGORY_NAME = "动态"; // 请确保后台分类名和这里完全一致
+const MOMENTS_CATEGORY_NAME = "动态"; 
 
 export const Route = createFileRoute("/_public/moments")({
   validateSearch: z.object({
@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_public/moments")({
     const [, , , domain, siteConfig] = await Promise.all([
       context.queryClient.prefetchInfiniteQuery(
         postsInfiniteQueryOptions({
-          categoryName: MOMENTS_CATEGORY_NAME, // 强制限定为“动态”分类
+          categoryName: MOMENTS_CATEGORY_NAME,
           tagName: deps.tagName,
           limit: POSTS_PER_PAGE,
         }),
@@ -45,7 +45,7 @@ export const Route = createFileRoute("/_public/moments")({
     ]);
 
     return {
-      title: "日常动态", // 或使用 m.moments_title() 如果你有这个翻译
+      title: "日常动态",
       description: siteConfig.description,
       canonicalHref: buildCanonicalUrl(domain, "/moments", {
         tagName: deps.tagName,
@@ -66,7 +66,7 @@ export const Route = createFileRoute("/_public/moments")({
   }),
 });
 
-// 1. 轻量级的加载骨架屏
+// 1. 骨架屏
 function PostsSkeleton() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 animate-pulse">
@@ -89,13 +89,14 @@ function PostsSkeleton() {
   );
 }
 
-// 2. 核心的渲染组件
+// 2. 核心组件
 function RouteComponent() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   
-  // 如果你不需要标签过滤，这个请求可以删掉
   const { data: tags } = useSuspenseQuery(tagsQueryOptions);
+  // ⚠️ 新增：获取站点配置，同步作者头像和信息
+  const { data: siteConfig } = useSuspenseQuery(siteConfigQuery);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useSuspenseInfiniteQuery(
@@ -110,7 +111,6 @@ function RouteComponent() {
     return data.pages.flatMap((page) => page.items);
   }, [data]);
 
-  // 这里的 handleTagClick 如果你后续要加标签过滤可以保留，不需要可以删
   const handleTagClick = (clickedTag?: string) => {
     navigate({
       search: withTagFilter(clickedTag),
@@ -118,7 +118,7 @@ function RouteComponent() {
     });
   };
 
-  // 空状态处理：如果没有动态，显示可爱的颜文字
+  // 空状态
   if (posts.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-32 text-gray-400">
@@ -130,17 +130,32 @@ function RouteComponent() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      {/* 头部博主信息区（你可以把头像换成你截图里的蓝发动漫图） */}
-      <div className="flex items-center gap-4 mb-10 pb-6 border-b border-gray-100">
-        <img
-          src="https://api.dicebear.com/9.x/notionists/svg?seed=ay" // 替换成你的真实头像URL
-          alt="avatar"
-          className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm bg-gray-100"
-        />
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">ay.</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            记录生活，分享瞬间
+      {/* 
+        头部博主信息区 
+        ⚠️ 已改为动态读取 siteConfig 中的作者信息
+      */}
+      <div className="relative flex items-end gap-4 mb-10 pb-6 border-b border-gray-100">
+        {/* 动态头像 */}
+        {siteConfig.authorAvatar ? (
+          <img
+            src={siteConfig.authorAvatar} // 从配置中读取头像
+            alt={siteConfig.authorName || "Author"}
+            className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-sm bg-white z-10"
+          />
+        ) : (
+          // 如果没有配置头像，显示一个默认的占位
+          <div className="w-20 h-20 rounded-full bg-blue-100 border-4 border-white flex items-center justify-center text-blue-500 text-2xl z-10">
+            {siteConfig.authorName?.charAt(0) || "A"}
+          </div>
+        )}
+        
+        <div className="pb-1">
+          {/* 动态昵称，添加白色和阴影保证在星空图上清晰可见 */}
+          <h1 className="text-3xl font-bold text-white drop-shadow-md">
+            {siteConfig.authorName || "ay."}
+          </h1>
+          <p className="text-sm text-gray-100 drop-shadow-sm mt-1">
+            {siteConfig.description || "记录生活，分享瞬间"}
           </p>
         </div>
       </div>
@@ -152,7 +167,7 @@ function RouteComponent() {
             {/* 时间轴圆点 */}
             <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-white border-2 border-blue-400 shadow-sm z-10" />
 
-            {/* 日期标识 */}
+            {/* 日期 */}
             <div className="text-xs text-gray-400 mb-2 font-mono">
               {new Date(post.createdAt).toLocaleDateString("zh-CN", {
                 year: "numeric",
@@ -162,29 +177,45 @@ function RouteComponent() {
             </div>
 
             {/* 动态内容卡片 */}
-            <div className="bg-white rounded-2xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-gray-50 hover:shadow-md transition-shadow duration-300">
-              {/* 渲染文章内容，假设后端返回的是 HTML */}
-              <div
-                className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: post.content }}
-              />
+            <Link 
+              to={`/posts/${post.slug}`} 
+              className="block group"
+            >
+              <div className="bg-white rounded-2xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-gray-50 group-hover:shadow-lg group-hover:border-blue-100 transition-all duration-300">
+                
+                {/* 封面图 */}
+                {post.cover && (
+                  <div className="mb-4 overflow-hidden rounded-xl">
+                    <img 
+                      src={post.cover} 
+                      alt={post.title || "动态图片"} 
+                      className="w-full h-auto max-h-[300px] object-cover group-hover:scale-[1.02] transition-transform duration-500"
+                    />
+                  </div>
+                )}
 
-              {/* 底部操作栏 */}
-              <div className="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs text-gray-400">
-                <span>
-                  发布于 {new Date(post.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
-                {/* 假如你有文章详情页，可以打开下面的注释 */}
-                {/* <Link to={`/posts/${post.slug}`} className="hover:text-blue-500 transition-colors">
-                  查看详情 →
-                </Link> */}
+                {/* 内容区域 */}
+                <div
+                  className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: post.content }}
+                />
+
+                {/* 底部操作栏 */}
+                <div className="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs text-gray-400">
+                  <span>
+                    发布于 {new Date(post.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <span className="text-blue-400 group-hover:text-blue-500 transition-colors">
+                    查看详情 →
+                  </span>
+                </div>
               </div>
-            </div>
+            </Link>
           </div>
         ))}
       </div>
 
-      {/* 加载更多 / 到底啦 区域 */}
+      {/* 加载更多区域 */}
       <div className="flex justify-center mt-10 mb-8">
         {hasNextPage ? (
           <button

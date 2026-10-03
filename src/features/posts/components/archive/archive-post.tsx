@@ -4,17 +4,11 @@ import { formatPublicPostDate } from "@/features/posts/utils/format-public-post-
 
 interface ArchivePostProps {
   post: PostItem;
-  isMoment?: boolean;
+  isMoment?: boolean; // ✅ 新增
 }
 
 export function ArchivePost({ post, isMoment = false }: ArchivePostProps) {
   const date = post.publishedAt ? new Date(post.publishedAt) : null;
-
-  // ⚠️ 把 post.cover 换成你实际的封面字段名
-  const cover = post.cover;
-
-  // ✅ 临时调试：确认组件被渲染，以及 isMoment 和 cover 的值
-  console.log("ArchivePost 渲染:", { isMoment, cover, post });
 
   return (
     <Link
@@ -45,24 +39,12 @@ export function ArchivePost({ post, isMoment = false }: ArchivePostProps) {
           </div>
         )}
 
-        {/* ✅ 新增：仅动态模式显示封面缩略图 */}
-        {isMoment && cover && (
-          <div className="shrink-0 w-7 h-7 md:w-8 md:h-8 ml-1 md:ml-2 overflow-hidden rounded-md bg-black/5 dark:bg-white/5">
-            <img
-              src={cover}
-              alt={post.title}
-              loading="lazy"
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-            />
-          </div>
-        )}
-
-        {/* Post Title */}
+        {/* Post Title：动态模式下加粗一点，并且占据更多宽度 */}
         <div
           className={`text-left font-bold group-hover:translate-x-1 transition-all group-hover:text-(--fuwari-primary) fuwari-text-75 pr-8 whitespace-nowrap overflow-ellipsis overflow-hidden ${
             isMoment
-              ? "w-[85%] md:w-[80%] text-base"
-              : "w-[70%] md:max-w-[65%] md:w-[65%]"
+              ? "w-[85%] md:w-[80%] text-base" // ✅ 动态：占满剩余宽度，字体稍大
+              : "w-[70%] md:max-w-[65%] md:w-[65%]" // 普通文章
           }`}
         >
           {post.title}

@@ -9,6 +9,7 @@ import type {
 } from "./types";
 import { purgeWorkersCache } from "./workers-cache";
 import { purgeOptionsFor } from "./workers-cache-policy";
+
 type InvalidateContext = BaseContext & {
   executionCtx: ExecutionContext;
 };
@@ -53,7 +54,12 @@ type RegisteredEntry = {
 
 const registry: RegisteredEntry[] = [];
 
+// 防止缓存击穿：记录正在读取/写入的 key，避免并发请求同时写 KV
 const inFlightRequests = new Map<string, Promise<unknown>>();
+
+// 防止 bumpGeneration 高频写入 KV：每个 namespace 5 分钟内只 bump 一次
+const lastBumpAt = new Map<string, number>();
+const BUMP_MIN_INTERVAL_MS = 5 * 60 * 1000;
 
 async function readGeneration(
   context: InvalidateContext,
@@ -92,12 +98,25 @@ async function readGeneration(
 async function bumpGeneration(
   context: InvalidateContext,
   namespace: string,
+  options: { force?: boolean } = {},
 ): Promise<void> {
+  const now = Date.now();
+  const last = lastBumpAt.get(namespace) ?? 0;
+
+  // 5 分钟内同一 namespace 只 bump 一次（force 可跳过）
+  if (!options.force && now - last < BUMP_MIN_INTERVAL_MS) {
+    return;
+  }
+  lastBumpAt.set(namespace, now);
+
   const key = `ver:${namespace}`;
   const generation = crypto.randomUUID();
 
   try {
-    await context.env.KV.put(key, generation);
+    await context.env.KV.put(key, generation, {
+      // 版本号自带 TTL，避免旧 key 长期占用空间
+      expirationTtl: 60 * 60 * 24 * 30,
+    });
   } catch (err) {
     console.error(
       JSON.stringify({
@@ -162,59 +181,81 @@ async function readEntry<T>(
   }
 
   const serializedKey = storageKey(version, logicalKey(entry, params));
-  const stored = await context.env.KV.get(serializedKey, "json").catch((err) =>
-    console.error(
-      JSON.stringify({
-        message: "public cache get failed",
-        key: serializedKey,
-        error: String(err),
-      }),
-    ),
-  );
 
-  const persist = async (value: unknown) => {
-    await context.env.KV.put(serializedKey, JSON.stringify(value), {
-      expirationTtl: Math.floor(ms(entry.ttl) / 1000),
-    }).catch((err) =>
-      console.error(
-        JSON.stringify({
-          message: "public cache set failed",
-          key: serializedKey,
-          error: String(err),
-        }),
-      ),
-    );
-  };
-
-  if (stored !== null && stored !== undefined) {
-    const parsed = entry.schema.safeParse(stored);
-    if (parsed.success) {
-      const data = entry.hydrate ? entry.hydrate(parsed.data) : parsed.data;
-      if (
-        entry.hydrate &&
-        JSON.stringify(data) !== JSON.stringify(parsed.data)
-      ) {
-        context.executionCtx.waitUntil(persist(data));
-      }
-      return data as T;
-    }
+  // 1. 已有相同请求在途 → 复用其 Promise，避免并发击穿
+  const pending = inFlightRequests.get(serializedKey);
+  if (pending) {
+    return pending as Promise<T>;
   }
 
-  const loaded = await entry.load(context, params);
-  if (loaded === null || loaded === undefined) return loaded as T;
+  // 2. 构建整个读取 + 回写逻辑为一个 Promise
+  const promise = (async () => {
+    const stored = await context.env.KV.get(serializedKey, "json").catch(
+      (err) =>
+        console.error(
+          JSON.stringify({
+            message: "public cache get failed",
+            key: serializedKey,
+            error: String(err),
+          }),
+        ),
+    );
 
-  const data = entry.hydrate ? entry.hydrate(loaded) : loaded;
-  context.executionCtx.waitUntil(persist(data));
-  return data as T;
+    const persist = async (value: unknown) => {
+      await context.env.KV.put(serializedKey, JSON.stringify(value), {
+        expirationTtl: Math.floor(ms(entry.ttl) / 1000),
+      }).catch((err) =>
+        console.error(
+          JSON.stringify({
+            message: "public cache set failed",
+            key: serializedKey,
+            error: String(err),
+          }),
+        ),
+      );
+    };
+
+    // 2.1 缓存命中
+    if (stored !== null && stored !== undefined) {
+      const parsed = entry.schema.safeParse(stored);
+      if (parsed.success) {
+        const data = entry.hydrate ? entry.hydrate(parsed.data) : parsed.data;
+        if (
+          entry.hydrate &&
+          JSON.stringify(data) !== JSON.stringify(parsed.data)
+        ) {
+          context.executionCtx.waitUntil(persist(data));
+        }
+        return data as T;
+      }
+    }
+
+    // 2.2 缓存未命中，加载数据
+    const loaded = await entry.load(context, params);
+    if (loaded === null || loaded === undefined) return loaded as T;
+
+    const data = entry.hydrate ? entry.hydrate(loaded) : loaded;
+    context.executionCtx.waitUntil(persist(data));
+    return data as T;
+  })();
+
+  // 3. 存入 Map，请求结束后清理
+  inFlightRequests.set(serializedKey, promise);
+  promise.finally(() => {
+    inFlightRequests.delete(serializedKey);
+  });
+
+  return promise as Promise<T>;
 }
 
 async function invalidateEntry(
   entry: RegisteredEntry,
   context: InvalidateContext,
   params: Record<string, unknown>,
+  options: { force?: boolean } = {},
 ): Promise<void> {
   if (entry.namespace && !isAddressable(entry, params)) {
-    await bumpGeneration(context, entry.namespace);
+    await bumpGeneration(context, entry.namespace, options);
     return;
   }
 
@@ -235,11 +276,12 @@ async function run(
   reason: PublicCacheReason,
   context: InvalidateContext,
   params: Record<string, unknown>,
+  options: { force?: boolean } = {},
 ): Promise<void> {
   await Promise.all(
     registry
       .filter((entry) => entry.invalidatedBy.includes(reason))
-      .map((entry) => invalidateEntry(entry, context, params)),
+      .map((entry) => invalidateEntry(entry, context, params, options)),
   );
 }
 
@@ -272,6 +314,7 @@ export function defineEntry<
 }
 
 export const invalidate = {
+  // 阅读量等高频事件：走节流，5 分钟最多写 1 次 KV
   async postPopularityUpdated(context: InvalidateContext) {
     await run("post-popularity.updated", context, {});
     await purgeWorkersCache(
@@ -279,15 +322,17 @@ export const invalidate = {
       purgeOptionsFor("post-popularity.updated", {}),
     );
   },
+  // 发布文章：force 立即生效
   async postPublished(context: InvalidateContext, params: { slug: string }) {
-    await run("post.published", context, params);
+    await run("post.published", context, params, { force: true });
     await purgeWorkersCache(
       context.executionCtx,
       purgeOptionsFor("post.published", params),
     );
   },
+  // 删除文章：force 立即生效
   async postDeleted(context: InvalidateContext, params: { slug: string }) {
-    await run("post.deleted", context, params);
+    await run("post.deleted", context, params, { force: true });
     await purgeWorkersCache(
       context.executionCtx,
       purgeOptionsFor("post.deleted", params),
@@ -332,7 +377,7 @@ export const invalidate = {
     );
   },
   async siteConfigChanged(context: InvalidateContext) {
-    await run("site-config.changed", context, {});
+    await run("site-config.changed", context, { force: true });
     await purgeWorkersCache(
       context.executionCtx,
       purgeOptionsFor("site-config.changed", {}),
@@ -340,7 +385,9 @@ export const invalidate = {
   },
   async all(context: InvalidateContext) {
     await Promise.all(
-      registry.map((entry) => invalidateEntry(entry, context, {})),
+      registry.map((entry) =>
+        invalidateEntry(entry, context, {}, { force: true }),
+      ),
     );
     await purgeWorkersCache(context.executionCtx, purgeOptionsFor("all", {}));
   },

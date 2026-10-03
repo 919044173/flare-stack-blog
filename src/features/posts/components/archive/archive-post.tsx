@@ -11,55 +11,60 @@ export function ArchivePost({ post, isMoment = false }: ArchivePostProps) {
   const date = post.publishedAt ? new Date(post.publishedAt) : null;
   const coverUrl = post.cover?.url;
 
-  // ✅ 动态模式：卡片式布局
+  // ✅ 动态模式：朋友圈风（大图在上，文字在下）
   if (isMoment) {
     return (
       <Link
         to="/post/$slug"
         params={{ slug: post.slug }}
-        className="group block! w-full rounded-xl overflow-hidden hover:bg-(--fuwari-btn-plain-bg-hover) active:bg-(--fuwari-btn-plain-bg-active) transition-colors p-3"
+        className="group block! w-full rounded-xl overflow-hidden bg-(--fuwari-card-bg) border border-black/5 dark:border-white/5 hover:shadow-lg transition-all duration-300"
         aria-label={post.title}
       >
-        <div className="flex gap-3 items-stretch">
-          {/* 左侧：封面大图 */}
-          {coverUrl && (
-            <div className="shrink-0 w-24 h-24 md:w-28 md:h-28 rounded-lg overflow-hidden bg-black/5 dark:bg-white/5">
-              <img
-                src={coverUrl}
-                alt={post.title}
-                loading="lazy"
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-            </div>
+        {/* 大图 */}
+        {coverUrl && (
+          <div className="w-full aspect-video overflow-hidden bg-black/5 dark:bg-white/5">
+            <img
+              src={coverUrl}
+              alt={post.title}
+              loading="lazy"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          </div>
+        )}
+
+        {/* 文字区 */}
+        <div className="p-4">
+          <h3 className="text-base md:text-lg font-bold group-hover:text-(--fuwari-primary) transition-colors line-clamp-1">
+            {post.title}
+          </h3>
+
+          {post.summary && (
+            <p className="text-sm fuwari-text-50 mt-1.5 line-clamp-2 leading-snug">
+              {post.summary}
+            </p>
           )}
 
-          {/* 右侧：标题 + 摘要 + 日期 */}
-          <div className="flex-1 min-w-0 flex flex-col justify-center">
-            <h3 className="text-base md:text-lg font-bold group-hover:text-(--fuwari-primary) transition-colors line-clamp-1">
-              {post.title}
-            </h3>
-
-            {/* 摘要：最多两行 */}
-            {post.summary && (
-              <p className="text-sm fuwari-text-50 mt-1 line-clamp-2 leading-snug">
-                {post.summary}
-              </p>
-            )}
-
-            {/* 日期 */}
+          <div className="flex items-center justify-between mt-3">
             <time
               dateTime={date?.toISOString()}
-              className="text-xs fuwari-text-30 mt-1.5"
+              className="text-xs fuwari-text-30"
             >
               {formatPublicPostDate(date, { monthDay: true })}
             </time>
+
+            {/* 标签（可选） */}
+            {post.tags && post.tags.length > 0 && (
+              <div className="text-xs fuwari-text-30 truncate ml-2">
+                {post.tags.map((t) => `#${t.name}`).join(" ")}
+              </div>
+            )}
           </div>
         </div>
       </Link>
     );
   }
 
-  // ✅ 文章模式：保持原样（时间轴一行）
+  // ✅ 文章模式：左图右文卡片（保持原有一行时间轴逻辑不变）
   return (
     <Link
       to="/post/$slug"

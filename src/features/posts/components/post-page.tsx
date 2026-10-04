@@ -28,6 +28,10 @@ export function PostPage({ post }: PostPageProps) {
   // Approximate word count
   const wordCount = post.readTimeInMinutes * 300;
 
+  // ✅ "动态 + 自动封面"时不显示封面（避免"封面"和"正文第一张图"重复）
+  const isMoment = post.category?.name === "动态";
+  const showCover = Boolean(post.cover) && !(isMoment && !post.coverIsManual);
+
   return (
     <div className="relative flex flex-col rounded-(--fuwari-radius-large) py-1 md:py-0 md:bg-transparent gap-4 mb-4 w-full">
       <TableOfContents headers={post.toc} />
@@ -96,12 +100,13 @@ export function PostPage({ post }: PostPageProps) {
           }}
         >
           <PostMeta post={post} className="mb-5" />
-          {!post.cover && (
+          {!showCover && (
             <div className="border-(--fuwari-meta-divider) border-dashed border-b mb-5" />
           )}
         </div>
 
-        {post.cover && (
+        {/* Cover（"动态 + 自动封面"时不显示） */}
+        {showCover && post.cover && (
           <div
             id="post-cover"
             className="mb-8 rounded-xl overflow-hidden fuwari-onload-animation"
@@ -122,9 +127,10 @@ export function PostPage({ post }: PostPageProps) {
         )}
 
         {/* Summary */}
-        <PostSummary 
-         summary={post.summary}
-         isMoment={post.category?.name === "动态"}/>
+        <PostSummary
+          summary={post.summary}
+          isMoment={post.category?.name === "动态"}
+        />
 
         {/* Markdown Content */}
         <div

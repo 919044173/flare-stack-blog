@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Link2,
   LogOut,
+  MessageCircle, 
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
@@ -96,6 +97,12 @@ export function SideBar({
       label: m.admin_sidebar_posts(),
       exact: false,
     },
+    {
+      path: "/admin/moments",     // ← 新增
+      icon: MessageCircle,
+      label: m.admin_sidebar_moments(),                
+      exact: false,
+     },
     {
       path: "/admin/tags",
       icon: Tag,

@@ -84,6 +84,8 @@ function MomentManagerPage() {
             }
           : undefined
       }
+      defaultCategoryName="动态"
+      defaultCreateLabel="新建动态"
       onPageChange={(newPage) => updateSearch({ page: newPage })}
       onStatusChange={(newStatus: StatusFilter) =>
         updateSearch({ status: newStatus })

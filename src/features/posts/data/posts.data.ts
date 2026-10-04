@@ -29,6 +29,7 @@ import { isPostBodyEmpty } from "@/features/posts/utils/is-post-body-empty";
 import type { PostStatus, PublicPostSnapshot } from "@/lib/db/schema";
 import {
   CategoriesTable,
+  MediaTable,
   PostsTable,
   PostTagsTable,
   TagsTable,
@@ -111,6 +112,7 @@ export async function getPosts(
     ...filters
   } = options;
 
+  // 排除分类
   let excludeCategoryId: number | undefined;
   if (excludeCategoryName) {
     const category = await db.query.CategoriesTable.findFirst({
@@ -130,7 +132,7 @@ export async function getPosts(
       (value) => (value == null ? null : new Date(value)),
     );
 
-  const posts = await db
+  const rows = await db
     .select({
       id: PostsTable.id,
       ...adminPostTextColumns(filters.taxonomy),
@@ -142,6 +144,7 @@ export async function getPosts(
       categoryId: PostsTable.categoryId,
       createdAt: PostsTable.createdAt,
       updatedAt: PostsTable.updatedAt,
+      coverMediaId: PostsTable.coverMediaId,
       ...(includeContent && !publicScope
         ? { contentJson: PostsTable.contentJson }
         : {}),
@@ -151,7 +154,47 @@ export async function getPosts(
     .offset(offset)
     .orderBy(...orderByClause)
     .where(whereClause);
-  return posts;
+
+  // ✅ 批量查封面 media
+  const coverIds = rows
+    .map((row) => row.coverMediaId)
+    .filter((id): id is number => id != null);
+
+  const coverById = new Map<
+    number,
+    {
+      id: number;
+      key: string;
+      url: string;
+      fileName: string;
+      width: number | null;
+      height: number | null;
+    }
+  >();
+  if (coverIds.length > 0) {
+    const medias = await db.query.MediaTable.findMany({
+      where: inArray(MediaTable.id, coverIds),
+    });
+    for (const media of medias) {
+      coverById.set(media.id, {
+        id: media.id,
+        key: media.key,
+        url: media.url,
+        fileName: media.fileName,
+        width: media.width,
+        height: media.height,
+      });
+    }
+  }
+
+  // ✅ 挂 cover
+  return rows.map((row) => ({
+    ...row,
+    cover:
+      row.coverMediaId != null
+        ? coverById.get(row.coverMediaId) ?? null
+        : null,
+  }));
 }
 
 export async function getPostsCount(

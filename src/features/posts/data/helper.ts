@@ -1,5 +1,5 @@
 import type { SQL } from "drizzle-orm";
-import { and, asc, desc, eq, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ne, or, sql } from "drizzle-orm";
 import type { PostStatus } from "@/lib/db/schema";
 import type { AdminTaxonomyFilter } from "@/features/posts/schema/posts.schema";
 import { PostTagsTable, PostsTable } from "@/lib/db/schema";
@@ -26,6 +26,7 @@ export function adminPostTextColumns(taxonomy?: AdminTaxonomyFilter) {
     slug: sql<string>`coalesce(json_extract(${PostsTable.publicSnapshotJson}, '$.slug'), ${PostsTable.publicSlug}, ${PostsTable.slug})`,
   };
 }
+
 function taxonomyWhereClause(taxonomy: AdminTaxonomyFilter): SQL {
   if (taxonomy.kind === "category")
     return eq(PostsTable.categoryId, taxonomy.id);
@@ -39,10 +40,21 @@ export function buildPostWhereClause(options: {
   publicOnly?: boolean;
   search?: string;
   taxonomy?: AdminTaxonomyFilter;
+  excludeCategoryId?: number;   // ✅ 新增
 }) {
   const whereClauses = [];
   if (options.taxonomy)
     whereClauses.push(taxonomyWhereClause(options.taxonomy));
+
+  // ✅ 排除某个分类（分类为空的文章保留）
+  if (options.excludeCategoryId != null) {
+    whereClauses.push(
+      or(
+        ne(PostsTable.categoryId, options.excludeCategoryId),
+        sql`${PostsTable.categoryId} IS NULL`,
+      )!,
+    );
+  }
 
   if (options.status) {
     whereClauses.push(eq(PostsTable.status, options.status));
@@ -83,7 +95,5 @@ export function buildPostOrderByClause(
       ? sql`json_extract(${PostsTable.publicSnapshotJson}, '$.publishedAt')`
       : PostsTable[field],
   );
-  // The id is an immutable primary key, so it keeps offset pagination stable
-  // when rows share the sorted value or are written while a client pages.
   return field === "id" ? [primary] : [primary, orderFn(PostsTable.id)];
 }

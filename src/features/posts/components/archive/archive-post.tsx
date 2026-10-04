@@ -25,15 +25,15 @@ export function ArchivePost({ post, isMoment = false }: ArchivePostProps) {
   aria-label={post.summary || post.title || "动态"}
 >
         {coverUrl && (
-          <div className="w-full aspect-video overflow-hidden bg-black/5 dark:bg-white/5">
-            <img
-              src={getPublicImageSrc(coverUrl, PUBLIC_IMAGE_WIDTH.cover)}
-              alt={post.title || "动态"}
-              loading="lazy"
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-          </div>
-        )}
+  <div className="w-full aspect-[16/9] max-h-64 overflow-hidden bg-black/5 dark:bg-white/5">
+    <img
+      src={getPublicImageSrc(coverUrl, PUBLIC_IMAGE_WIDTH.cover)}
+      alt={post.title || "动态"}
+      loading="lazy"
+      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+    />
+  </div>
+)}
 
         <div className="p-4">
           <p

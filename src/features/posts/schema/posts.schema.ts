@@ -49,7 +49,6 @@ export const PostItemSchema = PostSelectSchema.omit({
   publicSlug: true,
   coverMediaId: true,
   categoryId: true,
-  coverIsManual: true,   // ✅ 新增：公共 API 不需要此字段
 }).extend({
   tags: z.array(TagSelectSchema).optional(),
   category: PublicCategorySchema.nullable().catch(null),

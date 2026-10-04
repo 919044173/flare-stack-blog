@@ -27,10 +27,7 @@ import type { PublicPostCover } from "@/lib/db/schema";
 
 import { slugify } from "@/features/posts/utils/content";
 import { normalizePostContent } from "@/features/posts/utils/normalize-content";
-import {
-  isFuturePublishDate,
-  serverUtcDateString,
-} from "@/features/posts/utils/date";
+import { serverUtcDateString } from "@/features/posts/utils/date";
 import { calculatePostHash } from "@/features/posts/utils/sync";
 import { generateTableOfContents } from "@/features/posts/utils/toc";
 import * as SearchService from "@/features/search/service/search.service";
@@ -48,6 +45,9 @@ function stripPublicSnapshot<
   return rest;
 }
 
+/**
+ * 从 TipTap contentJson 里提取纯文本。
+ */
 function extractPlainText(node: unknown): string {
   if (!node || typeof node !== "object") return "";
   const n = node as { type?: string; text?: string; content?: unknown[] };
@@ -58,6 +58,9 @@ function extractPlainText(node: unknown): string {
   return "";
 }
 
+/**
+ * 从 TipTap contentJson 里提取第一张图片的 src。
+ */
 function extractFirstImageSrc(node: unknown): string | null {
   if (!node || typeof node !== "object") return null;
   const n = node as {
@@ -77,6 +80,9 @@ function extractFirstImageSrc(node: unknown): string | null {
   return null;
 }
 
+/**
+ * 从 "/images/xxx.webp" 里提取出 "xxx.webp"
+ */
 function extractMediaKeyFromSrc(src: string): string | null {
   const match = /\/images\/([^/?#]+)/.exec(src);
   return match?.[1] ?? null;
@@ -494,6 +500,7 @@ export async function publishPost(
     return err({ reason: "POST_NOT_FOUND" });
   }
 
+  // ✅ 动态没写摘要时，用正文前 120 字自动填充
   if (!post.summary && post.contentJson) {
     const excerpt = extractPlainText(post.contentJson).slice(0, 120).trim();
     if (excerpt) {
@@ -506,6 +513,7 @@ export async function publishPost(
     }
   }
 
+  // ✅ 没设封面时，用正文第一张插图当封面
   if (!post.coverMediaId && post.contentJson) {
     const firstImageSrc = extractFirstImageSrc(post.contentJson);
     if (firstImageSrc) {
@@ -524,19 +532,15 @@ export async function publishPost(
     }
   }
 
-  let publishedPost = post;
-  if (!publishedPost.publishedAt) {
-    const now = new Date();
-    const updated = await PostRepo.updatePost(context.db, post.id, {
-      publishedAt: now,
-    });
-    if (!updated) {
-      return err({ reason: "POST_NOT_FOUND" });
-    }
-    publishedPost = updated;
-  } else if (isFuturePublishDate(publishedPost.publishedAt.toISOString())) {
-    return err({ reason: "PUBLISHED_AT_IN_FUTURE" });
+  // ✅ 每次发布都用"当前时刻"覆盖 publishedAt
+  const now = new Date();
+  const updated = await PostRepo.updatePost(context.db, post.id, {
+    publishedAt: now,
+  });
+  if (!updated) {
+    return err({ reason: "POST_NOT_FOUND" });
   }
+  const publishedPost = updated;
 
   const slugTaken = await PostRepo.publicSlugExists(
     context.db,
@@ -549,11 +553,11 @@ export async function publishPost(
 
   const normalizedContent = normalizePostContent(publishedPost.contentJson);
   if (normalizedContent) {
-    const updated = await PostRepo.updatePost(context.db, publishedPost.id, {
+    const updated2 = await PostRepo.updatePost(context.db, publishedPost.id, {
       contentJson: normalizedContent,
     });
-    if (updated) {
-      publishedPost = updated;
+    if (updated2) {
+      Object.assign(publishedPost, updated2);
     }
   }
 

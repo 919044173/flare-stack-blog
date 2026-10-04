@@ -45,9 +45,6 @@ function stripPublicSnapshot<
   return rest;
 }
 
-/**
- * 从 TipTap contentJson 里提取纯文本。
- */
 function extractPlainText(node: unknown): string {
   if (!node || typeof node !== "object") return "";
   const n = node as { type?: string; text?: string; content?: unknown[] };
@@ -58,9 +55,6 @@ function extractPlainText(node: unknown): string {
   return "";
 }
 
-/**
- * 从 TipTap contentJson 里提取第一张图片的 src。
- */
 function extractFirstImageSrc(node: unknown): string | null {
   if (!node || typeof node !== "object") return null;
   const n = node as {
@@ -80,9 +74,6 @@ function extractFirstImageSrc(node: unknown): string | null {
   return null;
 }
 
-/**
- * 从 "/images/xxx.webp" 里提取出 "xxx.webp"
- */
 function extractMediaKeyFromSrc(src: string): string | null {
   const match = /\/images\/([^/?#]+)/.exec(src);
   return match?.[1] ?? null;
@@ -532,10 +523,13 @@ export async function publishPost(
     }
   }
 
-  // ✅ 每次发布都用"当前时刻"覆盖 publishedAt
+  // ✅ 一次性更新：publishedAt + contentJson
   const now = new Date();
+  const normalizedContent = normalizePostContent(post.contentJson);
+
   const updated = await PostRepo.updatePost(context.db, post.id, {
     publishedAt: now,
+    ...(normalizedContent ? { contentJson: normalizedContent } : {}),
   });
   if (!updated) {
     return err({ reason: "POST_NOT_FOUND" });
@@ -549,16 +543,6 @@ export async function publishPost(
   );
   if (slugTaken) {
     return err({ reason: "PUBLIC_SLUG_TAKEN" });
-  }
-
-  const normalizedContent = normalizePostContent(publishedPost.contentJson);
-  if (normalizedContent) {
-    const updated2 = await PostRepo.updatePost(context.db, publishedPost.id, {
-      contentJson: normalizedContent,
-    });
-    if (updated2) {
-      Object.assign(publishedPost, updated2);
-    }
   }
 
   await createPublishRevision(context, publishedPost);

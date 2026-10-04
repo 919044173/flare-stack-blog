@@ -42,10 +42,10 @@ export function ArchivePanel({ posts, isMoment = false }: ArchivePanelProps) {
       <div key={post.id}>
         {index > 0 && (
           <div className="flex items-center gap-6 my-6 text-xs fuwari-text-30">
-            <span className="flex-1 border-t border-dashed border-black/25 dark:border-white/15" />
-            <span className="px-2 select-none">≽^⚈⩊⚈^≼</span>
-            <span className="flex-1 border-t border-dashed border-black/15 dark:border-white/15" />
-          </div>
+  <span className="flex-1 border-t border-dashed border-black/40 dark:border-white/30" />
+  <span className="px-2 select-none">≥^ω^≤</span>
+  <span className="flex-1 border-t border-dashed border-black/40 dark:border-white/30" />
+</div>
         )}
         <ArchivePost post={post} isMoment={isMoment} />
       </div>

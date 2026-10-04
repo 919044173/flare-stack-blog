@@ -18,7 +18,8 @@ interface UsePostsOptions {
   status: StatusFilter;
   sortBy: SortField;
   search: string;
-  taxonomy?: GetPostsInput["taxonomy"];   // ✅ 新增
+  taxonomy?: GetPostsInput["taxonomy"];
+  excludeCategoryName?: string;   // ✅ 新增
 }
 
 export function adminPostsListParams({
@@ -26,7 +27,8 @@ export function adminPostsListParams({
   status,
   sortBy,
   search,
-  taxonomy,   // ✅ 新增
+  taxonomy,
+  excludeCategoryName,   // ✅ 新增
 }: UsePostsOptions): GetPostsInput {
   return {
     offset: (page - 1) * ADMIN_ITEMS_PER_PAGE,
@@ -35,7 +37,8 @@ export function adminPostsListParams({
     sortDir: "DESC",
     sortBy,
     search: search || undefined,
-    taxonomy,   // ✅ 新增
+    taxonomy,
+    excludeCategoryName,   // ✅ 新增
   };
 }
 
@@ -44,11 +47,19 @@ export function usePosts({
   status,
   sortBy,
   search,
-  taxonomy,   // ✅ 新增
+  taxonomy,
+  excludeCategoryName,   // ✅ 新增
 }: UsePostsOptions) {
   const postsQuery = useQuery({
     ...adminPostsQuery(
-      adminPostsListParams({ page, status, sortBy, search, taxonomy }),
+      adminPostsListParams({
+        page,
+        status,
+        sortBy,
+        search,
+        taxonomy,
+        excludeCategoryName,
+      }),
     ),
     placeholderData: keepPreviousData,
   });

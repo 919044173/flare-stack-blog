@@ -35,7 +35,7 @@ export function ArchivePost({ post, isMoment = false }: ArchivePostProps) {
         <div className="p-4">
           {/* 有封面：小字号 + 限制 5 行；无封面：大字号 + 全文显示 */}
           <p
-            className={`fuwari-text-75 leading-relaxed wrap-break-word ${
+            className={`fuwari-text-75 leading-relaxed wrap-break-word indent-[2em] ${
               coverUrl
                 ? "text-sm md:text-base line-clamp-5"
                 : "text-base md:text-lg"

@@ -21,7 +21,11 @@ export function ArchivePost({ post, isMoment = false }: ArchivePostProps) {
       <Link
   to="/post/$slug"
   params={{ slug: post.slug }}
-  className="group block! w-full rounded-xl overflow-hidden bg-(--fuwari-card-bg) ring-1 ring-black/10 dark:ring-white/10 shadow-md hover:shadow-lg transition-all duration-300"
+  className={`group block! w-full rounded-xl overflow-hidden transition-all duration-300 ${
+    coverUrl
+      ? "bg-(--fuwari-card-bg) border border-black/5 dark:border-white/5 hover:shadow-lg"
+      : "bg-(--fuwari-btn-plain-bg) border border-black/5 dark:border-white/5 hover:shadow-md"
+  }`}
   aria-label={post.summary || post.title || "动态"}
 >
         {coverUrl && (

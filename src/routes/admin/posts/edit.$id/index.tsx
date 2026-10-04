@@ -77,6 +77,7 @@ function EditPost() {
     serverToday: post.serverToday,
     coverMediaId: post.coverMediaId,
     cover: post.cover,
+    coverIsManual: post.coverIsManual,   // ✅ 新增
   };
 
   const handleSave = async (data: PostEditorData) => {
@@ -91,6 +92,7 @@ function EditPost() {
           publishedAt: data.publishedAt,
           pinnedAt: data.pinnedAt,
           coverMediaId: data.coverMediaId,
+          coverIsManual: data.coverIsManual,   // ✅ 新增
           categoryId: data.categoryId,
         },
       }),

@@ -48,6 +48,20 @@ function stripPublicSnapshot<
   return rest;
 }
 
+/**
+ * 从 TipTap contentJson 里提取纯文本。
+ * 用于动态没写摘要时，自动用正文前 N 字兜底。
+ */
+function extractPlainText(node: unknown): string {
+  if (!node || typeof node !== "object") return "";
+  const n = node as { type?: string; text?: string; content?: unknown[] };
+  if (n.type === "text" && typeof n.text === "string") return n.text;
+  if (Array.isArray(n.content)) {
+    return n.content.map(extractPlainText).join("");
+  }
+  return "";
+}
+
 async function resolveSnapshotCover(
   db: DB,
   coverMediaId: number | null | undefined,
@@ -455,6 +469,19 @@ export async function publishPost(
   const post = await PostRepo.findPostById(context.db, data.id);
   if (!post) {
     return err({ reason: "POST_NOT_FOUND" });
+  }
+
+  // ✅ 动态没写摘要时，用正文前 120 字自动填充
+  if (!post.summary && post.contentJson) {
+    const excerpt = extractPlainText(post.contentJson).slice(0, 120).trim();
+    if (excerpt) {
+      const updated = await PostRepo.updatePost(context.db, post.id, {
+        summary: excerpt,
+      });
+      if (updated) {
+        Object.assign(post, updated);
+      }
+    }
   }
 
   let publishedPost = post;

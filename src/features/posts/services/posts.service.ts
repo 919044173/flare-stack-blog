@@ -48,9 +48,6 @@ function stripPublicSnapshot<
   return rest;
 }
 
-/**
- * 从 TipTap contentJson 里提取纯文本。
- */
 function extractPlainText(node: unknown): string {
   if (!node || typeof node !== "object") return "";
   const n = node as { type?: string; text?: string; content?: unknown[] };
@@ -61,9 +58,6 @@ function extractPlainText(node: unknown): string {
   return "";
 }
 
-/**
- * 从 TipTap contentJson 里提取第一张图片的 src。
- */
 function extractFirstImageSrc(node: unknown): string | null {
   if (!node || typeof node !== "object") return null;
   const n = node as {
@@ -83,9 +77,6 @@ function extractFirstImageSrc(node: unknown): string | null {
   return null;
 }
 
-/**
- * 从 "/images/xxx.webp" 里提取出 "xxx.webp"
- */
 function extractMediaKeyFromSrc(src: string): string | null {
   const match = /\/images\/([^/?#]+)/.exec(src);
   return match?.[1] ?? null;
@@ -339,6 +330,7 @@ export async function listAdminPostsPage(
       publicOnly: data.publicOnly,
       search: data.search,
       taxonomy: data.taxonomy,
+      excludeCategoryName: data.excludeCategoryName,
     }),
   ]);
   const total =
@@ -360,7 +352,7 @@ export async function getPosts(context: DbContext, data: GetPostsInput) {
     publicOnly: data.publicOnly,
     search: data.search,
     taxonomy: data.taxonomy,
-    excludeCategoryName: data.excludeCategoryName,   // ✅ 新增
+    excludeCategoryName: data.excludeCategoryName,
     sortDir: data.sortDir,
     sortBy: data.sortBy,
     includeContent: data.includeContent,
@@ -376,6 +368,7 @@ export async function getPostsCount(
     publicOnly: data.publicOnly,
     search: data.search,
     taxonomy: data.taxonomy,
+    excludeCategoryName: data.excludeCategoryName,
   });
 }
 
@@ -501,7 +494,6 @@ export async function publishPost(
     return err({ reason: "POST_NOT_FOUND" });
   }
 
-  // ✅ 动态没写摘要时，用正文前 120 字自动填充
   if (!post.summary && post.contentJson) {
     const excerpt = extractPlainText(post.contentJson).slice(0, 120).trim();
     if (excerpt) {
@@ -514,7 +506,6 @@ export async function publishPost(
     }
   }
 
-  // ✅ 没设封面时，用正文第一张插图当封面
   if (!post.coverMediaId && post.contentJson) {
     const firstImageSrc = extractFirstImageSrc(post.contentJson);
     if (firstImageSrc) {

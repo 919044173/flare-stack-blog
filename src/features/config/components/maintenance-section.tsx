@@ -1,6 +1,5 @@
 import { m } from "@/paraglide/messages";
 import { CacheMaintenance } from "@/features/cache/components/cache-maintenance";
-import { PostPopularityMaintenance } from "@/features/post-popularity/components/post-popularity-maintenance";
 import { SearchMaintenance } from "@/features/search/components/search-maintenance";
 
 export function MaintenanceSection() {
@@ -14,7 +13,6 @@ export function MaintenanceSection() {
           </p>
         </div>
       </div>
-      <PostPopularityMaintenance />
       <SearchMaintenance />
       <CacheMaintenance />
       <p className="settings-muted">{m.settings_design_immediate()}</p>

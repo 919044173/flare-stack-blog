@@ -172,6 +172,43 @@ async function createPublishRevision(
   });
 }
 
+/**
+ * 根据"是否动态"，自动处理摘要 + 封面。
+ * - 动态：摘要 = 正文前 120 字
+ * - 封面：如果"不是手动设的"，则 = 正文第一张图
+ */
+async function applyAutoFields(
+  context: DbContext,
+  post: NonNullable<Awaited<ReturnType<typeof PostRepo.findPostById>>>,
+): Promise<{ summary?: string; coverMediaId?: number }> {
+  const updates: { summary?: string; coverMediaId?: number } = {};
+
+  // ✅ 摘要：只对"动态"生效
+  const isMoment = post.category?.name === "动态";
+  if (isMoment && post.contentJson) {
+    const excerpt = extractPlainText(post.contentJson).slice(0, 120).trim();
+    if (excerpt && excerpt !== post.summary) {
+      updates.summary = excerpt;
+    }
+  }
+
+  // ✅ 封面：如果"不是手动设的"，则自动同步"正文第一张图"
+  if (!post.coverIsManual && post.contentJson) {
+    const firstImageSrc = extractFirstImageSrc(post.contentJson);
+    if (firstImageSrc) {
+      const mediaKey = extractMediaKeyFromSrc(firstImageSrc);
+      if (mediaKey) {
+        const media = await MediaRepo.findMediaByKey(context.db, mediaKey);
+        if (media && media.id !== post.coverMediaId) {
+          updates.coverMediaId = media.id;
+        }
+      }
+    }
+  }
+
+  return updates;
+}
+
 export function getHomePosts(context: DbContext, page: number) {
   return PostRepo.getHomePosts(context.db, page);
 }
@@ -491,58 +528,33 @@ export async function publishPost(
     return err({ reason: "POST_NOT_FOUND" });
   }
 
-  // ✅ 动态没写摘要时，用正文前 120 字自动填充
-  if (!post.summary && post.contentJson) {
-    const excerpt = extractPlainText(post.contentJson).slice(0, 120).trim();
-    if (excerpt) {
-      const updated = await PostRepo.updatePost(context.db, post.id, {
-        summary: excerpt,
-      });
-      if (updated) {
-        Object.assign(post, updated);
-      }
-    }
-  }
-
-  // ✅ 没设封面时，用正文第一张插图当封面
-  if (!post.coverMediaId && post.contentJson) {
-    const firstImageSrc = extractFirstImageSrc(post.contentJson);
-    if (firstImageSrc) {
-      const mediaKey = extractMediaKeyFromSrc(firstImageSrc);
-      if (mediaKey) {
-        const media = await MediaRepo.findMediaByKey(context.db, mediaKey);
-        if (media) {
-          const updated = await PostRepo.updatePost(context.db, post.id, {
-            coverMediaId: media.id,
-          });
-          if (updated) {
-            Object.assign(post, updated);
-          }
-        }
-      }
-    }
-  }
-
   // ✅ 首次发布：填当前时刻；重新发布：保留原发布时间
-const normalizedContent = normalizePostContent(post.contentJson);
-const isFirstPublish = !post.publishedAt;
-const publishedAt = isFirstPublish ? new Date() : post.publishedAt;
+  const normalizedContent = normalizePostContent(post.contentJson);
+  const isFirstPublish = !post.publishedAt;
+  const publishedAt = isFirstPublish ? new Date() : post.publishedAt;
 
-await PostRepo.updatePost(context.db, post.id, {
-  ...(isFirstPublish ? { publishedAt } : {}),
-  ...(normalizedContent ? { contentJson: normalizedContent } : {}),
-});
+  // ✅ 自动处理"摘要" + "封面"
+  const autoFields = await applyAutoFields(context, {
+    ...post,
+    contentJson: normalizedContent ?? post.contentJson,
+  });
 
-const freshPost = await PostRepo.findPostById(context.db, post.id);
-if (!freshPost) {
-  return err({ reason: "POST_NOT_FOUND" });
-}
+  await PostRepo.updatePost(context.db, post.id, {
+    ...(isFirstPublish ? { publishedAt } : {}),
+    ...(normalizedContent ? { contentJson: normalizedContent } : {}),
+    ...autoFields,
+  });
 
-// ✅ 强制用"首次发布时的时间"，避免 D1 读副本延迟
-const publishedPost = {
-  ...freshPost,
-  publishedAt,
-};
+  const freshPost = await PostRepo.findPostById(context.db, post.id);
+  if (!freshPost) {
+    return err({ reason: "POST_NOT_FOUND" });
+  }
+
+  const publishedPost = {
+    ...freshPost,
+    publishedAt,
+    ...autoFields,
+  };
 
   const slugTaken = await PostRepo.publicSlugExists(
     context.db,

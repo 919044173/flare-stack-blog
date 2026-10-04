@@ -83,7 +83,7 @@ function PostManagerPage() {
       status={status}
       sortBy={sortBy}
       search={search}
-      excludeCategoryName="动态"   {/* ✅ 新增 */}
+      excludeCategoryName="动态" 
       onPageChange={(newPage) => updateSearch({ page: newPage })}
       onStatusChange={(newStatus: StatusFilter) =>
         updateSearch({ status: newStatus })

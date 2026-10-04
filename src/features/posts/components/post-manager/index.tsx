@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAdminChrome } from "@/components/admin/admin-chrome";
 import { AdminPagination } from "@/components/admin/admin-pagination";
+import { categoriesQueryOptions } from "@/features/categories/queries";
 import { orpc, orpcClient } from "@/lib/orpc";
 import { ADMIN_ITEMS_PER_PAGE } from "@/lib/constants";
 import { useContentMotion } from "@/hooks/use-motion";
@@ -24,7 +25,9 @@ interface PostManagerProps {
   sortBy: SortField;
   search: string;
   taxonomy?: GetPostsInput["taxonomy"];
-  excludeCategoryName?: string;   // ✅ 新增
+  excludeCategoryName?: string;
+  defaultCategoryName?: string;
+  defaultCreateLabel?: string;
   onPageChange: (page: number) => void;
   onStatusChange: (status: StatusFilter) => void;
   onSortByChange: (sortBy: SortField) => void;
@@ -38,7 +41,9 @@ export function PostManager({
   sortBy,
   search,
   taxonomy,
-  excludeCategoryName,   // ✅ 新增
+  excludeCategoryName,
+  defaultCategoryName,
+  defaultCreateLabel,
   onPageChange,
   onStatusChange,
   onSortByChange,
@@ -89,7 +94,7 @@ export function PostManager({
     isPlaceholderData,
     error,
     refetch,
-  } = usePosts({ page, status, sortBy, search, taxonomy, excludeCategoryName });   // ✅ 加 excludeCategoryName
+  } = usePosts({ page, status, sortBy, search, taxonomy, excludeCategoryName });
   const contentRef = useRef<HTMLTableSectionElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   useListScroll(
@@ -113,7 +118,28 @@ export function PostManager({
   }, [page, totalPages, isPending, isPlaceholderData, error, onPageChange]);
 
   const createMutation = useMutation({
-    mutationFn: () => orpcClient.posts.admin.create(),
+    mutationFn: async () => {
+      // 1. 创建空草稿
+      const post = await orpcClient.posts.admin.create();
+
+      // 2. 如果有默认分类，自动设置
+      if (defaultCategoryName) {
+        const categories = queryClient.getQueryData(
+          categoriesQueryOptions.queryKey,
+        );
+        const category = categories?.find(
+          (c) => c.name === defaultCategoryName,
+        );
+        if (category) {
+          await orpcClient.posts.admin.update({
+            id: post.id,
+            data: { categoryId: category.id },
+          });
+        }
+      }
+
+      return post;
+    },
     onSuccess: (post) => {
       void queryClient.invalidateQueries({
         queryKey: orpc.posts.admin.list.key(),
@@ -129,7 +155,7 @@ export function PostManager({
   const isCreating = createMutation.isPending;
   const createLabel = isCreating
     ? m.admin_posts_creating()
-    : m.admin_posts_create();
+    : (defaultCreateLabel ?? m.admin_posts_create());
   useEffect(() => {
     setPrimaryAction({
       label: createLabel,

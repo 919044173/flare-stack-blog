@@ -19,7 +19,6 @@ import { PageFade } from "@/components/layout/page-fade";
 import { Toaster } from "@/components/layout/toaster";
 import { sessionQuery } from "@/features/auth/queries";
 import { settingsSectionFromPath } from "@/features/config/components/admin/settings-pages";
-import { useVersionCheck } from "@/features/version/hooks/use-version-check";
 import { CACHE_CONTROL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages";
@@ -70,7 +69,6 @@ function AdminLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => editorWorkspace,
   );
-  useVersionCheck();
 
   return (
     <AdminChromeProvider>

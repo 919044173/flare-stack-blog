@@ -49,6 +49,7 @@ export const PostItemSchema = PostSelectSchema.omit({
   publicSlug: true,
   coverMediaId: true,
   categoryId: true,
+  coverIsManual: true,   // ✅ 新增：公共 API 不需要此字段
 }).extend({
   tags: z.array(TagSelectSchema).optional(),
   category: PublicCategorySchema.nullable().catch(null),
@@ -78,6 +79,7 @@ export const PostWithTocSchema = PostSelectSchema.omit({
   publicSlug: true,
   coverMediaId: true,
   categoryId: true,
+  coverIsManual: true,   // ✅ 新增：公共 API 不需要此字段
 })
   .extend({
     tags: z.array(TagSelectSchema).optional(),
@@ -213,7 +215,7 @@ const AdminPostListItemSchema = z.object({
   pinnedAt: coercedDateNullable,
   createdAt: coercedDate,
   updatedAt: coercedDate,
-  cover: AdminPostCoverSchema.nullable(),   // ✅ 新增
+  cover: AdminPostCoverSchema.nullable(),
 });
 
 const AdminPostStatusCountsSchema = z.object({

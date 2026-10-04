@@ -524,17 +524,25 @@ export async function publishPost(
   }
 
   // ✅ 一次性更新：publishedAt + contentJson
-  const now = new Date();
-  const normalizedContent = normalizePostContent(post.contentJson);
+const now = new Date();
+const normalizedContent = normalizePostContent(post.contentJson);
 
-  const updated = await PostRepo.updatePost(context.db, post.id, {
-    publishedAt: now,
-    ...(normalizedContent ? { contentJson: normalizedContent } : {}),
-  });
-  if (!updated) {
-    return err({ reason: "POST_NOT_FOUND" });
-  }
-  const publishedPost = updated;
+await PostRepo.updatePost(context.db, post.id, {
+  publishedAt: now,
+  ...(normalizedContent ? { contentJson: normalizedContent } : {}),
+});
+
+// ✅ 重新查询最新数据
+const freshPost = await PostRepo.findPostById(context.db, post.id);
+if (!freshPost) {
+  return err({ reason: "POST_NOT_FOUND" });
+}
+
+// ✅ 强制覆盖 publishedAt（避免 D1 读副本延迟导致的旧值）
+const publishedPost = {
+  ...freshPost,
+  publishedAt: now,
+};
 
   const slugTaken = await PostRepo.publicSlugExists(
     context.db,

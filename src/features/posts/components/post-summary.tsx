@@ -3,10 +3,16 @@ import { m } from "@/paraglide/messages";
 
 interface PostSummaryProps {
   summary?: string | null;
+  /** 是否是动态（"动态"分类）—— 动态不显示摘要区块 */
+  isMoment?: boolean;
 }
 
-export function PostSummary({ summary }: PostSummaryProps) {
+export function PostSummary({
+  summary,
+  isMoment = false,
+}: PostSummaryProps) {
   if (!summary) return null;
+  if (isMoment) return null;   // ✅ 动态不显示摘要
 
   return (
     <div

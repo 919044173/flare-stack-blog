@@ -40,6 +40,7 @@ export const Route = createFileRoute("/admin/posts/")({
           status: "ALL",
           sortBy: "updatedAt",
           search: "",
+          excludeCategoryName: "动态",   // ✅ 新增
         }),
       ),
     );
@@ -82,6 +83,7 @@ function PostManagerPage() {
       status={status}
       sortBy={sortBy}
       search={search}
+      excludeCategoryName="动态"   {/* ✅ 新增 */}
       onPageChange={(newPage) => updateSearch({ page: newPage })}
       onStatusChange={(newStatus: StatusFilter) =>
         updateSearch({ status: newStatus })

@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
+import { categoriesQueryOptions } from "@/features/categories/queries";
 import { PostManager } from "@/features/posts/components/post-manager";
 import { adminPostsListParams } from "@/features/posts/components/post-manager/hooks";
 import { PostManagerPageSkeleton } from "@/features/posts/components/post-manager/post-manager-skeleton";
@@ -33,17 +34,20 @@ export const Route = createFileRoute("/admin/posts/")({
   pendingComponent: PostManagerPageSkeleton,
   pendingMs: 0,
   loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(
-      adminPostsQuery(
-        adminPostsListParams({
-          page: 1,
-          status: "ALL",
-          sortBy: "updatedAt",
-          search: "",
-          excludeCategoryName: "动态",   // ✅ 新增
-        }),
+    await Promise.all([
+      context.queryClient.ensureQueryData(categoriesQueryOptions),
+      context.queryClient.ensureQueryData(
+        adminPostsQuery(
+          adminPostsListParams({
+            page: 1,
+            status: "ALL",
+            sortBy: "updatedAt",
+            search: "",
+            excludeCategoryName: "动态",
+          }),
+        ),
       ),
-    );
+    ]);
     return { title: m.admin_posts_title() };
   },
   component: PostManagerPage,
@@ -83,7 +87,9 @@ function PostManagerPage() {
       status={status}
       sortBy={sortBy}
       search={search}
-      excludeCategoryName="动态" 
+      excludeCategoryName="动态"
+      defaultCategoryName="文章"
+      defaultCreateLabel="新建文章"
       onPageChange={(newPage) => updateSearch({ page: newPage })}
       onStatusChange={(newStatus: StatusFilter) =>
         updateSearch({ status: newStatus })

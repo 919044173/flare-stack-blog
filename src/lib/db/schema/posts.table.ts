@@ -56,6 +56,12 @@ export const PostsTable = sqliteTable(
     publishedAt: integer("published_at", { mode: "timestamp" }),
     pinnedAt: integer("pinned_at", { mode: "timestamp" }),
     coverMediaId: integer("cover_media_id"),
+    // ✅ 新增：标记"封面是否手动设置"
+    // - false（默认）：封面从"正文第一张图"自动同步
+    // - true：封面由用户手动设置，自动逻辑不覆盖
+    coverIsManual: integer("cover_is_manual", { mode: "boolean" })
+      .notNull()
+      .default(false),
     categoryId: integer("category_id").references(() => CategoriesTable.id, {
       onDelete: "set null",
     }),

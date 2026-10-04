@@ -111,7 +111,6 @@ export async function getPosts(
     ...filters
   } = options;
 
-  // ✅ 若指定排除分类，先查出该分类 id
   let excludeCategoryId: number | undefined;
   if (excludeCategoryName) {
     const category = await db.query.CategoriesTable.findFirst({
@@ -162,9 +161,21 @@ export async function getPostsCount(
     publicOnly?: boolean;
     search?: string;
     taxonomy?: AdminTaxonomyFilter;
+    excludeCategoryName?: string;
   } = {},
 ) {
-  const whereClause = buildPostWhereClause(options);
+  const { excludeCategoryName, ...filters } = options;
+
+  let excludeCategoryId: number | undefined;
+  if (excludeCategoryName) {
+    const category = await db.query.CategoriesTable.findFirst({
+      where: eq(CategoriesTable.name, excludeCategoryName),
+      columns: { id: true },
+    });
+    excludeCategoryId = category?.id;
+  }
+
+  const whereClause = buildPostWhereClause({ ...filters, excludeCategoryId });
   const totalNumberofPosts = await db
     .select({ count: count() })
     .from(PostsTable)
@@ -178,12 +189,24 @@ export async function getAdminPostStatusCounts(
     publicOnly?: boolean;
     search?: string;
     taxonomy?: AdminTaxonomyFilter;
+    excludeCategoryName?: string;
   } = {},
 ) {
+  const { excludeCategoryName, ...filters } = options;
+
+  let excludeCategoryId: number | undefined;
+  if (excludeCategoryName) {
+    const category = await db.query.CategoriesTable.findFirst({
+      where: eq(CategoriesTable.name, excludeCategoryName),
+      columns: { id: true },
+    });
+    excludeCategoryId = category?.id;
+  }
+
   const rows = await db
     .select({ status: PostsTable.status, count: count() })
     .from(PostsTable)
-    .where(buildPostWhereClause(options))
+    .where(buildPostWhereClause({ ...filters, excludeCategoryId }))
     .groupBy(PostsTable.status);
   return {
     draft: rows.find((row) => row.status === "draft")?.count ?? 0,
@@ -315,7 +338,6 @@ export async function getPostsCursor(
 }
 
 export async function getHomePosts(db: DB, requestedPage: number) {
-  // ✅ 排除"动态"分类
   const dynamicsCategory = await db.query.CategoriesTable.findFirst({
     where: eq(CategoriesTable.name, "动态"),
     columns: { id: true },

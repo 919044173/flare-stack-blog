@@ -22,7 +22,7 @@ export const homePosts = defineEntry({
   namespace: "posts:home",
   key: ({ page }: { page: number }) => ["posts", "home", page],
   schema: HomePostsResponseSchema,
-  ttl: "10m",
+  ttl: "1h",
   invalidatedBy: POST_PUBLIC_REASONS,
   load: (context, { page }) => PostRepo.getHomePosts(context.db, page),
 });
@@ -32,7 +32,7 @@ export const pinnedPosts = defineEntry({
   namespace: "posts:pinned",
   key: (_params: Record<string, never>) => ["posts", "pinned"],
   schema: PostItemSchema.array(),
-  ttl: "10m",
+  ttl: "1h",
   invalidatedBy: POST_PUBLIC_REASONS,
   load: (context) => PostRepo.findPinnedPosts(context.db),
 });
@@ -49,7 +49,7 @@ export const popularPosts = defineEntry({
     postIds: number[];
   }) => ["posts", "popular", snapshotVersion, limit],
   schema: PostItemSchema.array(),
-  ttl: "10m",
+  ttl: "1h",
   invalidatedBy: [...POST_PUBLIC_REASONS, "post-popularity.updated"],
   load: async (context, { limit, postIds }) => {
     const posts = await PostRepo.findPostsByIds(context.db, postIds);
@@ -89,7 +89,7 @@ export const postsList = defineEntry({
     uncategorized ? "uncategorized" : (categoryName ?? "all-categories"),
   ],
   schema: PostListResponseSchema,
-  ttl: "10m",
+  ttl: "1h",
   invalidatedBy: POST_PUBLIC_REASONS,
   load: (
     context,
@@ -112,7 +112,7 @@ export const postBySlug = defineEntry({
   address: ["slug"],
   key: ({ slug }: { slug: string }) => ["post", slug],
   schema: PostWithTocSchema,
-  ttl: "10m",
+  ttl: "1h",
   invalidatedBy: POST_PUBLIC_REASONS,
   load: async (context, { slug }) => {
     const post = await PostRepo.findPostBySlug(context.db, slug, {

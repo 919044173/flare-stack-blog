@@ -1,4 +1,3 @@
-import { invalidate } from "@/features/cache/public-cache";
 import * as PostPopularityRepo from "@/features/post-popularity/data/post-popularity.data";
 import {
   resolveUmamiApiConfig,
@@ -21,7 +20,7 @@ import {
   type PostPopularityStatusRecord,
   type PostPopularitySyncStatus,
 } from "@/features/post-popularity/post-popularity.schema";
-import { popularPosts } from "@/features/posts/posts.cache";
+import * as PostRepo from "@/features/posts/data/posts.data";
 import type { PostItem } from "@/features/posts/schema/posts.schema";
 import { serverEnv } from "@/lib/env/server.env";
 import type { Result } from "@/lib/errors";
@@ -227,6 +226,17 @@ export const postPopularityService = createPostPopularityService({
   writeSnapshot: PostPopularityRepo.writeSnapshot,
   readStatus: PostPopularityRepo.readStatus,
   writeStatus: PostPopularityRepo.writeStatus,
-  invalidate: (context) => invalidate.postPopularityUpdated(context),
-  getPopularPosts: (context, params) => popularPosts.get(context, params),
+  invalidate: async () => {
+    // 热门文章不再走 KV 缓存，无需失效
+  },
+  getPopularPosts: async (context, { limit, postIds }) => {
+    const posts = await PostRepo.findPostsByIds(context.db, postIds);
+    const postById = new Map(posts.map((post) => [post.id, post]));
+    return postIds
+      .flatMap((postId) => {
+        const post = postById.get(postId);
+        return post ? [post] : [];
+      })
+      .slice(0, limit);
+  },
 });

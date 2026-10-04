@@ -4,12 +4,7 @@ import * as MediaRepo from "@/features/media/data/media.data";
 import { syncPostMedia } from "@/features/posts/data/post-media.data";
 import * as PostRevisionRepo from "@/features/posts/data/post-revisions.data";
 import * as PostRepo from "@/features/posts/data/posts.data";
-import {
-  pinnedPosts,
-  homePosts,
-  postBySlug,
-  postsList,
-} from "@/features/posts/posts.cache";
+import { postBySlug } from "@/features/posts/posts.cache";
 import type {
   CreatePostData,
   DeletePostInput,
@@ -146,32 +141,28 @@ async function createPublishRevision(
   });
 }
 
-export function getHomePosts(
-  context: DbContext & { executionCtx: ExecutionContext },
-  page: number,
-) {
-  return homePosts.get(context, { page });
+export function getHomePosts(context: DbContext, page: number) {
+  return PostRepo.getHomePosts(context.db, page);
 }
 
-export async function getPinnedPosts(
-  context: DbContext & { executionCtx: ExecutionContext },
-) {
-  return pinnedPosts.get(context, {});
+export async function getPinnedPosts(context: DbContext) {
+  return PostRepo.findPinnedPosts(context.db);
 }
 
 export async function getPostsCursor(
-  context: DbContext & { executionCtx: ExecutionContext },
+  context: DbContext,
   data: GetPostsCursorInput,
 ) {
   const tagName = normalizePostTagName(data.tagName);
   const categoryName = normalizePostCategoryName(data.categoryName);
-  return postsList.get(context, {
+  return PostRepo.getPostsCursor(context.db, {
     limit: data.limit ?? 10,
     cursor: data.cursor ?? 0,
     tagName,
     categoryName,
     uncategorized: data.uncategorized,
     excludePinned: data.excludePinned,
+    publicOnly: true,
   });
 }
 
@@ -194,7 +185,6 @@ export async function generateSlug(
   data: GenerateSlugInput,
 ) {
   const baseSlug = slugify(data.title);
-  // 1. 先查有没有完全一样的 (比如 'hello-world')
   const exactMatch = await PostRepo.slugExists(context.db, baseSlug, {
     excludeId: data.excludeId,
   });
@@ -202,13 +192,10 @@ export async function generateSlug(
     return { slug: baseSlug };
   }
 
-  // 2. 既然 'hello-world' 被占了，那就查所有 'hello-world-%' 的
   const similarSlugs = await PostRepo.findSimilarSlugs(context.db, baseSlug, {
     excludeId: data.excludeId,
   });
 
-  // 3. 在内存里找最大的数字后缀
-  // 正则含义：匹配以 "-数字" 结尾的字符串，并捕获那个数字
   const regex = new RegExp(`^${baseSlug}-(\\d+)$`);
 
   let maxSuffix = 0;
@@ -222,7 +209,6 @@ export async function generateSlug(
     }
   }
 
-  // 4. 结果就是最大值 + 1
   return { slug: `${baseSlug}-${maxSuffix + 1}` };
 }
 
@@ -241,17 +227,6 @@ function randomSlugSuffix() {
   return Math.random().toString(36).slice(2, 8);
 }
 
-/**
- * Inserts a draft, deriving its slug from the title and retrying when a
- * concurrent insert claimed that slug first.
- *
- * `generateSlug` reads the existing slugs before the row is written, so two
- * creates racing on the same title derive the same slug and one of them hits
- * the unique index. Retrying the derived slug clears a single straggler, but
- * a whole batch racing at once keeps re-deriving the same next suffix, so
- * after `SLUG_DERIVED_ATTEMPTS` the losers take a random suffix instead. Only
- * a contended batch ever sees one, so ordinary creates keep a readable slug.
- */
 async function insertDraftWithGeneratedSlug(
   context: DbContext,
   title: string,
@@ -273,11 +248,6 @@ async function insertDraftWithGeneratedSlug(
   }
 }
 
-/**
- * Creates a brand new draft carrying the given content. Unlike
- * `createEmptyPost`, it never reuses an existing empty draft, so a client can
- * safely retry a failed create or create several posts in a row.
- */
 export async function createDraft(context: DbContext, data: CreatePostData) {
   const post = await insertDraftWithGeneratedSlug(context, data.title, {
     title: data.title,

@@ -95,6 +95,7 @@ export async function getPosts(
     publicOnly?: boolean;
     search?: string;
     taxonomy?: AdminTaxonomyFilter;
+    excludeCategoryName?: string;
     sortDir?: SortDirection;
     sortBy?: SortField;
     includeContent?: boolean;
@@ -106,9 +107,21 @@ export async function getPosts(
     sortDir,
     sortBy,
     includeContent = false,
+    excludeCategoryName,
     ...filters
   } = options;
-  const whereClause = buildPostWhereClause(filters);
+
+  // ✅ 若指定排除分类，先查出该分类 id
+  let excludeCategoryId: number | undefined;
+  if (excludeCategoryName) {
+    const category = await db.query.CategoriesTable.findFirst({
+      where: eq(CategoriesTable.name, excludeCategoryName),
+      columns: { id: true },
+    });
+    excludeCategoryId = category?.id;
+  }
+
+  const whereClause = buildPostWhereClause({ ...filters, excludeCategoryId });
   const publicScope = filters.taxonomy?.scope === "public";
   const orderByClause = buildPostOrderByClause(sortDir, sortBy, publicScope);
   const snapshotDate = (field: "publishedAt" | "pinnedAt") =>
@@ -130,9 +143,6 @@ export async function getPosts(
       categoryId: PostsTable.categoryId,
       createdAt: PostsTable.createdAt,
       updatedAt: PostsTable.updatedAt,
-      // contentJson is the editable draft body. In public-snapshot scope every
-      // other column is read from publicSnapshotJson, so returning the draft
-      // here would mix an unpublished body into a published row.
       ...(includeContent && !publicScope
         ? { contentJson: PostsTable.contentJson }
         : {}),
@@ -162,7 +172,6 @@ export async function getPostsCount(
   return totalNumberofPosts[0].count;
 }
 
-/** Status facets use the same search predicate as the paginated Admin list. */
 export async function getAdminPostStatusCounts(
   db: DB,
   options: {
@@ -203,11 +212,6 @@ export async function findReusableEmptyDraft(db: DB) {
   return null;
 }
 
-/**
- * Get posts with cursor-based pagination
- * @param cursor - The id of the last item from previous page
- * @param limit - Number of items per page
- */
 export async function getPostsCursor(
   db: DB,
   options: {
@@ -311,18 +315,13 @@ export async function getPostsCursor(
 }
 
 export async function getHomePosts(db: DB, requestedPage: number) {
-  // ✅ 查询"动态"分类的 id
+  // ✅ 排除"动态"分类
   const dynamicsCategory = await db.query.CategoriesTable.findFirst({
     where: eq(CategoriesTable.name, "动态"),
     columns: { id: true },
   });
 
-  // ✅ 基础条件：只查已发布的文章
-  const baseConditions = [
-    sql`${PostsTable.publicSnapshotJson} IS NOT NULL`,
-  ];
-
-  // ✅ 如果"动态"分类存在，排除掉它（分类为空的文章视为普通文章，保留）
+  const baseConditions = [sql`${PostsTable.publicSnapshotJson} IS NOT NULL`];
   if (dynamicsCategory) {
     baseConditions.push(
       or(
@@ -331,10 +330,8 @@ export async function getHomePosts(db: DB, requestedPage: number) {
       )!,
     );
   }
-
   const homeWhere = and(...baseConditions);
 
-  // ✅ 计数：和查询用同一个 WHERE
   const totalResult = await db
     .select({ count: count() })
     .from(PostsTable)
@@ -591,11 +588,6 @@ export async function deletePost(db: DB, id: number) {
   await db.delete(PostsTable).where(eq(PostsTable.id, id));
 }
 
-/**
- * Check if a slug exists in the database
- * @param slug - The slug to check
- * @param excludeId - Optional post ID to exclude (for editing existing posts)
- */
 export async function slugExists(
   db: DB,
   slug: string,
@@ -614,9 +606,6 @@ export async function slugExists(
   return results.length > 0;
 }
 
-/**
- * 找出所有长得像 "baseSlug-%" 的 Slug
- */
 export async function findSimilarSlugs(
   db: DB,
   baseSlug: string,
@@ -624,7 +613,6 @@ export async function findSimilarSlugs(
 ) {
   const conditions = [like(PostsTable.slug, `${baseSlug}-%`)];
 
-  // 如果是编辑文章，要排除掉自己，防止把自己算作冲突
   if (options.excludeId) {
     conditions.push(ne(PostsTable.id, options.excludeId));
   }

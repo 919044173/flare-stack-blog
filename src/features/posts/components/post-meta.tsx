@@ -38,7 +38,7 @@ export function PostMeta({ post, className }: PostMetaProps) {
           dateTime={published?.toISOString()}
           className="text-sm font-medium fuwari-text-50"
         >
-          {formatPublicPostDate(published)}
+          {formatPublicPostDate(published, { withTime: true })}
         </time>
       </div>
 
@@ -52,7 +52,7 @@ export function PostMeta({ post, className }: PostMetaProps) {
             dateTime={updated?.toISOString()}
             className="text-sm font-medium fuwari-text-50"
           >
-            {formatPublicPostDate(updated)}
+            {formatPublicPostDate(updated, { withTime: true })}
           </time>
         </div>
       )}

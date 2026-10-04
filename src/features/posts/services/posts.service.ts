@@ -45,16 +45,23 @@ function stripPublicSnapshot<
   return rest;
 }
 
+/**
+ * 从 TipTap contentJson 里提取纯文本。
+ * 段落之间用 "\n" 拼接，方便"取第一段"。
+ */
 function extractPlainText(node: unknown): string {
   if (!node || typeof node !== "object") return "";
   const n = node as { type?: string; text?: string; content?: unknown[] };
   if (n.type === "text" && typeof n.text === "string") return n.text;
   if (Array.isArray(n.content)) {
-    return n.content.map(extractPlainText).join("");
+    return n.content.map(extractPlainText).join("\n");
   }
   return "";
 }
 
+/**
+ * 从 TipTap contentJson 里提取第一张图片的 src。
+ */
 function extractFirstImageSrc(node: unknown): string | null {
   if (!node || typeof node !== "object") return null;
   const n = node as {
@@ -74,6 +81,9 @@ function extractFirstImageSrc(node: unknown): string | null {
   return null;
 }
 
+/**
+ * 从 "/images/xxx.webp" 里提取出 "xxx.webp"
+ */
 function extractMediaKeyFromSrc(src: string): string | null {
   const match = /\/images\/([^/?#]+)/.exec(src);
   return match?.[1] ?? null;
@@ -174,7 +184,7 @@ async function createPublishRevision(
 
 /**
  * 根据"是否动态"，自动处理摘要 + 封面。
- * - 动态：摘要 = 正文前 120 字
+ * - 动态：摘要 = 正文第一段的前 120 字（超长则加 "......"）
  * - 封面：如果"不是手动设的"，则 = 正文第一张图
  */
 async function applyAutoFields(
@@ -186,7 +196,17 @@ async function applyAutoFields(
   // ✅ 摘要：只对"动态"生效
   const isMoment = post.category?.name === "动态";
   if (isMoment && post.contentJson) {
-    const excerpt = extractPlainText(post.contentJson).slice(0, 120).trim();
+    // 1. 提取纯文本（段落之间加 "\n"）
+    const rawText = extractPlainText(post.contentJson);
+    // 2. 只取"第一段"
+    const firstParagraph = rawText.split("\n")[0] ?? "";
+    // 3. 判断"第一段是否超过 120 字"
+    const isTruncated = firstParagraph.length > 120;
+    // 4. 截断到 120 字
+    const truncated = firstParagraph.slice(0, 120).trim();
+    // 5. 如果"被截断"，末尾加 "......"
+    const excerpt = isTruncated ? `${truncated}......` : truncated;
+
     if (excerpt && excerpt !== post.summary) {
       updates.summary = excerpt;
     }

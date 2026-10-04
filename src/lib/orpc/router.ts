@@ -16,7 +16,6 @@ import postPopularityRouter from "@/features/post-popularity/server/router";
 import postsRouter from "@/features/posts/server/router";
 import searchRouter from "@/features/search/server/router";
 import tagsRouter from "@/features/tags/server/router";
-import versionRouter from "@/features/version/server/router";
 import webhookRouter from "@/features/webhook/server/router";
 
 export const router = {
@@ -33,7 +32,6 @@ export const router = {
   postPopularity: postPopularityRouter,
   dashboard: dashboardRouter,
   cache: cacheRouter,
-  version: versionRouter,
   webhooks: webhookRouter,
 };
 

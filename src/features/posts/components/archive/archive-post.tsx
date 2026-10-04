@@ -19,11 +19,11 @@ export function ArchivePost({ post, isMoment = false }: ArchivePostProps) {
   if (isMoment) {
     return (
       <Link
-        to="/post/$slug"
-        params={{ slug: post.slug }}
-        className="group block! w-full rounded-xl overflow-hidden bg-(--fuwari-card-bg) border border-black/5 dark:border-white/5 hover:shadow-lg transition-all duration-300"
-        aria-label={post.summary || post.title || "动态"}
-      >
+  to="/post/$slug"
+  params={{ slug: post.slug }}
+  className="group block! w-full rounded-xl overflow-hidden bg-(--fuwari-card-bg) border border-black/10 dark:border-white/10 shadow-sm hover:shadow-lg transition-all duration-300"
+  aria-label={post.summary || post.title || "动态"}
+>
         {coverUrl && (
           <div className="w-full aspect-video overflow-hidden bg-black/5 dark:bg-white/5">
             <img

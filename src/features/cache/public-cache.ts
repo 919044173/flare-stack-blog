@@ -405,6 +405,8 @@ export function defineEntry<
 }
 
 export const invalidate = {
+
+/**
   // 阅读量等高频事件：走令牌桶限流，连点合并
   async postPopularityUpdated(context: InvalidateContext) {
     await run("post-popularity.updated", context, {});
@@ -414,6 +416,7 @@ export const invalidate = {
       { throttleKey: "post-popularity.updated" },
     );
   },
+*/
 
   // 发布文章：立即生效（force），但 purge 仍走令牌桶
   async postPublished(context: InvalidateContext, params: { slug: string }) {

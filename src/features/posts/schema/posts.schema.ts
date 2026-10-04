@@ -49,6 +49,7 @@ export const PostItemSchema = PostSelectSchema.omit({
   publicSlug: true,
   coverMediaId: true,
   categoryId: true,
+  coverIsManual: true,   // 公共 API 不需要
 }).extend({
   tags: z.array(TagSelectSchema).optional(),
   category: PublicCategorySchema.nullable().catch(null),
@@ -78,7 +79,7 @@ export const PostWithTocSchema = PostSelectSchema.omit({
   publicSlug: true,
   coverMediaId: true,
   categoryId: true,
-  coverIsManual: true,   // ✅ 新增：公共 API 不需要此字段
+  coverIsManual: true,
 })
   .extend({
     tags: z.array(TagSelectSchema).optional(),
@@ -92,11 +93,15 @@ export const PostWithTocSchema = PostSelectSchema.omit({
       }),
     ),
     cover: PublicPostCoverSchema.nullable().catch(null),
+    coverIsManual: z
+      .union([z.boolean(), z.number()])
+      .transform((v) => Boolean(v)),
   })
   .nullable();
 
 export const AdminPostSchema = PostSelectSchema.omit({
   publicSlug: true,
+  coverIsManual: true,
 })
   .extend({
     tags: z.array(TagSelectSchema).optional(),
@@ -104,6 +109,9 @@ export const AdminPostSchema = PostSelectSchema.omit({
     publicSnapshotContentJson: NullableJsonContentSchema,
     serverToday: z.string(),
     cover: AdminPostCoverSchema.nullable(),
+    coverIsManual: z
+      .union([z.boolean(), z.number()])
+      .transform((v) => Boolean(v)),
   })
   .nullable();
 

@@ -22,6 +22,7 @@ export interface PostEditorData {
   serverToday: string;
   coverMediaId: number | null;
   cover: PostEditorCover | null;
+  coverIsManual: boolean;   // ✅ 新增
 }
 
 export interface PostEditorProps {

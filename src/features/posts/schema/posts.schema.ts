@@ -30,18 +30,7 @@ const PostSelectSchema = createSelectSchema(PostsTable, {
 }).omit({
   publicSnapshotJson: true,
 });
-/**
- * Strict on purpose, and narrower than the table.
- *
- * `createUpdateSchema` takes every column, so `id`, `createdAt` and
- * `updatedAt` were writable: a PATCH could move a row to another id or
- * backdate it, and `updatedAt` is the default list sort key, so a forged
- * value buried the post. They are the server's to set, never the client's.
- *
- * Publication is not a field either. A plain object would silently strip
- * these: a client that PATCHed `{ status: "published" }` got a 200 back and a
- * post that was still a draft. Rejecting the key says so instead.
- */
+
 const PostUpdateSchema = createUpdateSchema(PostsTable, {
   contentJson: NullableJsonContentSchema.optional(),
 })
@@ -67,19 +56,24 @@ export const PostItemSchema = PostSelectSchema.omit({
   viewCount: z.number().int().nonnegative().optional(),
   cover: PublicPostCoverSchema.nullable().catch(null),
 });
+
 export const PostListResponseSchema = z.object({
   items: z.array(PostItemSchema),
   nextCursor: z.number().nullable(),
 });
+
 export const HOME_POSTS_PER_PAGE = 8;
+
 export const HomePostsInputSchema = z.object({
   page: z.number().int().min(1).max(1_000_000).default(1),
 });
+
 export const HomePostsResponseSchema = z.object({
   items: z.array(PostItemSchema),
   page: z.number().int().positive(),
   totalPages: z.number().int().positive(),
 });
+
 export const PostWithTocSchema = PostSelectSchema.omit({
   publicSlug: true,
   coverMediaId: true,
@@ -186,7 +180,7 @@ export type AdminTaxonomyFilter = z.infer<typeof AdminTaxonomyFilterSchema>;
 
 export const GetPostsInputSchema = z.object({
   taxonomy: AdminTaxonomyFilterSchema.optional(),
-  excludeCategoryName: z.string().optional(),  
+  excludeCategoryName: z.string().optional(),
   offset: z.number().optional(),
   limit: z.number().optional(),
   status: z.custom<PostStatus>().optional(),
@@ -219,9 +213,7 @@ const AdminPostListItemSchema = z.object({
   pinnedAt: coercedDateNullable,
   createdAt: coercedDate,
   updatedAt: coercedDate,
-  contentJson: NullableJsonContentSchema.optional().describe(
-    "Only returned when the request asks for includeContent=true outside the public taxonomy scope.",
-  ),
+  cover: AdminPostCoverSchema.nullable(),   // ✅ 新增
 });
 
 const AdminPostStatusCountsSchema = z.object({
@@ -240,11 +232,6 @@ export const AdminPostListPageSchema = z.object({
 
 export const FindPostByIdInputSchema = z.object({ id: z.number() });
 
-/**
- * Content for a newly created draft. When present, `POST /api/admin/posts`
- * always creates a new draft instead of reusing an existing empty one, so
- * several external clients can create posts without colliding.
- */
 export const CreatePostDataSchema = z.object({
   title: z
     .string()

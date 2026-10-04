@@ -161,3 +161,74 @@ function PostRowMenu({
     const close = () => setOpen(false);
     document.addEventListener("scroll", close, true);
     window.addEventListener("resize", close);
+    return () => {
+      document.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open, present]);
+  useEffect(() => {
+    if (!open) return;
+    menuRef.current
+      ?.querySelector<HTMLElement>('[role="menuitem"]')
+      ?.focus({ preventScroll: true });
+    const outside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        !menuRef.current?.contains(target) &&
+        !triggerRef.current?.contains(target)
+      )
+        setOpen(false);
+    };
+    document.addEventListener("mousedown", outside);
+    return () => document.removeEventListener("mousedown", outside);
+  }, [open, position]);
+  return (
+    <div className="post-list-menu">
+      <button
+        ref={triggerRef}
+        type="button"
+        aria-label={m.admin_posts_more_named({ title })}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <MoreHorizontal size={18} />
+      </button>
+      {present && position
+        ? createPortal(
+            <div
+              ref={menuRef}
+              role="menu"
+              aria-label={m.admin_posts_more_named({ title })}
+              className="post-row-menu fuwari-popover-motion"
+              data-state={open ? "open" : "closing"}
+              inert={!open}
+              aria-hidden={!open}
+              style={position}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setOpen(false);
+                  triggerRef.current?.focus({ preventScroll: true });
+                }
+              }}
+            >
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false);
+                  onDelete(triggerRef.current);
+                }}
+              >
+                <Trash2 size={15} />
+                {m.admin_posts_action_delete_post()}
+              </button>
+            </div>,
+            document.body,
+          )
+        : null}
+    </div>
+  );
+}

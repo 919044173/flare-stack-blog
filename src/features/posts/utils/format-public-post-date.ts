@@ -5,18 +5,18 @@ import { getLocale } from "@/paraglide/runtime";
 const formats = {
   zh: {
     full: new Intl.DateTimeFormat("zh-CN", {
-      timeZone: "UTC",
+      timeZone: "Asia/Shanghai",
       year: "numeric",
       month: "long",
       day: "numeric",
     }),
     short: new Intl.DateTimeFormat("zh-CN", {
-      timeZone: "UTC",
+      timeZone: "Asia/Shanghai",
       month: "2-digit",
       day: "2-digit",
     }),
     fullWithTime: new Intl.DateTimeFormat("zh-CN", {
-      timeZone: "UTC",
+      timeZone: "Asia/Shanghai",
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -25,7 +25,7 @@ const formats = {
       hour12: false,
     }),
     shortWithTime: new Intl.DateTimeFormat("zh-CN", {
-      timeZone: "UTC",
+      timeZone: "Asia/Shanghai",
       month: "2-digit",
       day: "2-digit",
       hour: "2-digit",
@@ -35,18 +35,18 @@ const formats = {
   },
   en: {
     full: new Intl.DateTimeFormat("en-US", {
-      timeZone: "UTC",
+      timeZone: "Asia/Shanghai",
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
     }),
     short: new Intl.DateTimeFormat("en-US", {
-      timeZone: "UTC",
+      timeZone: "Asia/Shanghai",
       month: "2-digit",
       day: "2-digit",
     }),
     fullWithTime: new Intl.DateTimeFormat("en-US", {
-      timeZone: "UTC",
+      timeZone: "Asia/Shanghai",
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -55,7 +55,7 @@ const formats = {
       hour12: false,
     }),
     shortWithTime: new Intl.DateTimeFormat("en-US", {
-      timeZone: "UTC",
+      timeZone: "Asia/Shanghai",
       month: "2-digit",
       day: "2-digit",
       hour: "2-digit",

@@ -1,6 +1,5 @@
 import { Loader2, RefreshCw } from "lucide-react";
 import TextareaAutosize from "react-textarea-autosize";
-import DatePicker from "@/components/ui/date-picker";
 import { CategorySelect } from "@/features/categories/components/category-select";
 import { TagSelector } from "@/features/tags/components/tag-selector";
 import { cn } from "@/lib/utils";
@@ -73,27 +72,11 @@ export function PostEditorMetadata({
           </div>
         </label>
 
-        <div className="flex items-end gap-3">
-          <label className="grid min-w-0 flex-1 gap-2 text-xs fuwari-text-50">
-            {m.editor_meta_date()}
-            <DatePicker
-              today={post.serverToday}
-              maxDate={post.serverToday}
-              value={
-                post.publishedAt
-                  ? post.publishedAt.toISOString().slice(0, 10)
-                  : ""
-              }
-              onChange={(dateStr) => {
-                if (dateStr && dateStr > post.serverToday) return;
-                onPostChange({
-                  publishedAt: dateStr
-                    ? new Date(`${dateStr}T12:00:00Z`)
-                    : null,
-                });
-              }}
-            />
-          </label>
+        {/* 置顶开关：日期字段已移除，发布时间由后端自动记录 */}
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs fuwari-text-50">
+            {m.editor_meta_pin()}
+          </span>
           <button
             type="button"
             role="switch"
@@ -103,11 +86,8 @@ export function PostEditorMetadata({
                 pinnedAt: post.pinnedAt ? null : new Date(),
               })
             }
-            className="flex h-10 shrink-0 items-center gap-2 pb-0"
+            className="flex h-10 shrink-0 items-center gap-2"
           >
-            <span className="text-xs fuwari-text-50">
-              {m.editor_meta_pin()}
-            </span>
             <span
               className={cn(
                 "relative h-6 w-10 rounded-full transition-colors",

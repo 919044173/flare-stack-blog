@@ -138,7 +138,7 @@ async function bumpGeneration(
   try {
     await context.env.KV.put(key, newGeneration(), {
       // 版本号自带 TTL，避免旧 key 长期占用空间
-      expirationTtl: 60 * 60 * 24 * 30,
+      expirationTtl: 60 * 60,
     });
   } catch (err) {
     console.error(

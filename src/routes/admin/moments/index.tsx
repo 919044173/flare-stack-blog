@@ -80,7 +80,7 @@ function MomentManagerPage() {
           ? {
               kind: "category",
               id: momentCategory.id,
-              scope: "public",
+              scope: "current",
             }
           : undefined
       }

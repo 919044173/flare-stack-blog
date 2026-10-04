@@ -1,9 +1,11 @@
+import { eq } from "drizzle-orm";
 import { defineEntry } from "@/features/cache/public-cache";
 import * as PostRepo from "@/features/posts/data/posts.data";
 import { PostWithTocSchema } from "@/features/posts/schema/posts.schema";
 import { toPublicCover } from "@/features/posts/public-snapshot";
 import { estimateReadTimeMinutes } from "@/features/posts/utils/content";
 import { generateTableOfContents } from "@/features/posts/utils/toc";
+import { PostsTable } from "@/lib/db/schema";
 
 const POST_PUBLIC_REASONS = [
   "post.published",
@@ -12,14 +14,6 @@ const POST_PUBLIC_REASONS = [
   "category.changed",
 ] as const;
 
-/**
- * 只保留详情页缓存。
- *
- * 首页 / 置顶 / 热门 / 列表 均不再使用 KV 缓存：
- * - D1 查询本身很快（个人博客场景）
- * - 避免 bump 机制产生孤儿 key
- * - 内容实时生效，不再有 TTL 延迟
- */
 export const postBySlug = defineEntry({
   name: "posts.detail",
   namespace: "posts:detail",
@@ -33,6 +27,12 @@ export const postBySlug = defineEntry({
       publicOnly: true,
     });
     if (!post) return null;
+
+    // ✅ 额外查 coverIsManual（因为 snapshot 里没这个字段）
+    const rawPost = await context.db.query.PostsTable.findFirst({
+      where: eq(PostsTable.publicSlug, slug),
+      columns: { coverIsManual: true },
+    });
 
     return {
       id: post.id,
@@ -50,6 +50,7 @@ export const postBySlug = defineEntry({
       category: "category" in post ? (post.category ?? null) : null,
       toc: generateTableOfContents(post.contentJson),
       cover: toPublicCover(post.publicSnapshotJson?.cover),
+      coverIsManual: rawPost?.coverIsManual ?? false,
     };
   },
 });

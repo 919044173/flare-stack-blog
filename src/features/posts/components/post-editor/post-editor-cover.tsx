@@ -33,6 +33,7 @@ export function PostEditorCover({
   onChange: (next: {
     coverMediaId: number | null;
     cover: CoverValue | null;
+    coverIsManual: boolean;   // ✅ 新增
   }) => void;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -80,7 +81,13 @@ export function PostEditorCover({
           {cover ? (
             <button
               type="button"
-              onClick={() => onChange({ coverMediaId: null, cover: null })}
+              onClick={() =>
+                onChange({
+                  coverMediaId: null,
+                  cover: null,
+                  coverIsManual: false,   // ✅ 清除封面 → 恢复"自动"
+                })
+              }
               className="h-8 rounded-xl bg-black/45 px-3 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/55"
             >
               {m.editor_meta_cover_clear()}
@@ -96,6 +103,7 @@ export function PostEditorCover({
           onChange({
             coverMediaId: media.id,
             cover: toCover(media),
+            coverIsManual: true,   // ✅ 手动选封面 → 标记为"手动"
           });
           setPickerOpen(false);
         }}

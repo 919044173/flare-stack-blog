@@ -62,6 +62,37 @@ function extractPlainText(node: unknown): string {
   return "";
 }
 
+/**
+ * 从 TipTap contentJson 里提取第一张图片的 src。
+ * 用于动态没设封面时，用正文第一张图当封面。
+ */
+function extractFirstImageSrc(node: unknown): string | null {
+  if (!node || typeof node !== "object") return null;
+  const n = node as {
+    type?: string;
+    attrs?: { src?: string };
+    content?: unknown[];
+  };
+  if (n.type === "image" && typeof n.attrs?.src === "string") {
+    return n.attrs.src;
+  }
+  if (Array.isArray(n.content)) {
+    for (const child of n.content) {
+      const found = extractFirstImageSrc(child);
+      if (found !== null) return found;
+    }
+  }
+  return null;
+}
+
+/**
+ * 从 "/images/xxx.webp" 里提取出 "xxx.webp"
+ */
+function extractMediaKeyFromSrc(src: string): string | null {
+  const match = /\/images\/([^/?#]+)/.exec(src);
+  return match?.[1] ?? null;
+}
+
 async function resolveSnapshotCover(
   db: DB,
   coverMediaId: number | null | undefined,
@@ -480,6 +511,25 @@ export async function publishPost(
       });
       if (updated) {
         Object.assign(post, updated);
+      }
+    }
+  }
+
+  // ✅ 没设封面时，用正文第一张插图当封面
+  if (!post.coverMediaId && post.contentJson) {
+    const firstImageSrc = extractFirstImageSrc(post.contentJson);
+    if (firstImageSrc) {
+      const mediaKey = extractMediaKeyFromSrc(firstImageSrc);
+      if (mediaKey) {
+        const media = await MediaRepo.findMediaByKey(context.db, mediaKey);
+        if (media) {
+          const updated = await PostRepo.updatePost(context.db, post.id, {
+            coverMediaId: media.id,
+          });
+          if (updated) {
+            Object.assign(post, updated);
+          }
+        }
       }
     }
   }

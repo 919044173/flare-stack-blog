@@ -311,9 +311,39 @@ export async function getPostsCursor(
 }
 
 export async function getHomePosts(db: DB, requestedPage: number) {
-  const total = await getPostsCount(db, { publicOnly: true });
+  // ✅ 查询"动态"分类的 id
+  const dynamicsCategory = await db.query.CategoriesTable.findFirst({
+    where: eq(CategoriesTable.name, "动态"),
+    columns: { id: true },
+  });
+
+  // ✅ 基础条件：只查已发布的文章
+  const baseConditions = [
+    sql`${PostsTable.publicSnapshotJson} IS NOT NULL`,
+  ];
+
+  // ✅ 如果"动态"分类存在，排除掉它（分类为空的文章视为普通文章，保留）
+  if (dynamicsCategory) {
+    baseConditions.push(
+      or(
+        ne(PostsTable.categoryId, dynamicsCategory.id),
+        sql`${PostsTable.categoryId} IS NULL`,
+      )!,
+    );
+  }
+
+  const homeWhere = and(...baseConditions);
+
+  // ✅ 计数：和查询用同一个 WHERE
+  const totalResult = await db
+    .select({ count: count() })
+    .from(PostsTable)
+    .where(homeWhere);
+  const total = totalResult[0]?.count ?? 0;
+
   const totalPages = Math.max(1, Math.ceil(total / HOME_POSTS_PER_PAGE));
   const page = Math.min(requestedPage, totalPages);
+
   const rows = await db
     .select({
       id: PostsTable.id,
@@ -323,7 +353,7 @@ export async function getHomePosts(db: DB, requestedPage: number) {
       publicSnapshotJson: PostsTable.publicSnapshotJson,
     })
     .from(PostsTable)
-    .where(buildPostWhereClause({ publicOnly: true }))
+    .where(homeWhere)
     .orderBy(
       desc(snapshotPinnedAt),
       desc(snapshotPublishedAt),
@@ -331,6 +361,7 @@ export async function getHomePosts(db: DB, requestedPage: number) {
     )
     .limit(HOME_POSTS_PER_PAGE)
     .offset((page - 1) * HOME_POSTS_PER_PAGE);
+
   return { items: await hydratePublicPosts(db, rows), page, totalPages };
 }
 

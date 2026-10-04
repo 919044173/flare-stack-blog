@@ -37,13 +37,21 @@ export function ArchivePanel({ posts, isMoment = false }: ArchivePanelProps) {
           />
 
           {isMoment ? (
-            // 动态模式：竖向卡片列表
-            <div className="flex flex-col gap-10 mt-3">
-              {groupedPosts[year].map((post) => (
-                <ArchivePost key={post.id} post={post} isMoment={isMoment} />
-              ))}
-            </div>
-          ) : (
+  <div className="flex flex-col mt-3">
+    {groupedPosts[year].map((post, index) => (
+      <div key={post.id}>
+        {index > 0 && (
+          <div className="flex items-center gap-4 my-6 text-xs fuwari-text-30">
+            <span className="flex-1 border-t border-dashed border-black/15 dark:border-white/15" />
+            <span className="px-2 select-none">≽^⚈⩊⚈^≼</span>
+            <span className="flex-1 border-t border-dashed border-black/15 dark:border-white/15" />
+          </div>
+        )}
+        <ArchivePost post={post} isMoment={isMoment} />
+      </div>
+    ))}
+  </div>
+) : (
             // 文章模式：保留时间轴（每条之间有小间距）
             <div className="flex flex-col gap-1 mt-1">
               {groupedPosts[year].map((post) => (

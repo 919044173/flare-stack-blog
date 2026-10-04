@@ -9,6 +9,7 @@ import { orpc, orpcClient } from "@/lib/orpc";
 import { ADMIN_ITEMS_PER_PAGE } from "@/lib/constants";
 import { useContentMotion } from "@/hooks/use-motion";
 import { m } from "@/paraglide/messages";
+import type { GetPostsInput } from "@/features/posts/schema/posts.schema";   // ✅ 新增
 import { PostRow, PostsToolbar } from "./components";
 import ConfirmationModal from "@/components/ui/confirmation-modal";
 import { useListScroll } from "./hooks/use-list-scroll";
@@ -22,6 +23,7 @@ interface PostManagerProps {
   status: StatusFilter;
   sortBy: SortField;
   search: string;
+  taxonomy?: GetPostsInput["taxonomy"];   // ✅ 新增
   onPageChange: (page: number) => void;
   onStatusChange: (status: StatusFilter) => void;
   onSortByChange: (sortBy: SortField) => void;
@@ -34,6 +36,7 @@ export function PostManager({
   status,
   sortBy,
   search,
+  taxonomy,   // ✅ 新增
   onPageChange,
   onStatusChange,
   onSortByChange,
@@ -56,7 +59,6 @@ export function PostManager({
     if (searchTimerRef.current !== null) clearTimeout(searchTimerRef.current);
     searchTimerRef.current = null;
   }, []);
-  // URL changes (including browser Back) supersede any pending text submission.
   useEffect(() => {
     clearPendingSearch();
     setSearchInput(search);
@@ -85,7 +87,7 @@ export function PostManager({
     isPlaceholderData,
     error,
     refetch,
-  } = usePosts({ page, status, sortBy, search });
+  } = usePosts({ page, status, sortBy, search, taxonomy });   // ✅ 加 taxonomy
   const contentRef = useRef<HTMLTableSectionElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   useListScroll(

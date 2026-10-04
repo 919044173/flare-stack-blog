@@ -186,6 +186,7 @@ export type AdminTaxonomyFilter = z.infer<typeof AdminTaxonomyFilterSchema>;
 
 export const GetPostsInputSchema = z.object({
   taxonomy: AdminTaxonomyFilterSchema.optional(),
+  excludeCategoryName: z.string().optional(),  
   offset: z.number().optional(),
   limit: z.number().optional(),
   status: z.custom<PostStatus>().optional(),

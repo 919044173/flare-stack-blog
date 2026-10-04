@@ -85,7 +85,7 @@ export function PostEditorCover({
                 onChange({
                   coverMediaId: null,
                   cover: null,
-                  coverIsManual: false,   // ✅ 清除封面 → 恢复"自动"
+                  coverIsManual: false,   // ✅ 清除封面 → 恢复自动
                 })
               }
               className="h-8 rounded-xl bg-black/45 px-3 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/55"
@@ -103,7 +103,7 @@ export function PostEditorCover({
           onChange({
             coverMediaId: media.id,
             cover: toCover(media),
-            coverIsManual: true,   // ✅ 手动选封面 → 标记为"手动"
+            coverIsManual: true,   // ✅ 手动选封面 → 标记为手动
           });
           setPickerOpen(false);
         }}

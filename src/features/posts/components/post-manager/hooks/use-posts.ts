@@ -18,6 +18,7 @@ interface UsePostsOptions {
   status: StatusFilter;
   sortBy: SortField;
   search: string;
+  taxonomy?: GetPostsInput["taxonomy"];   // ✅ 新增
 }
 
 export function adminPostsListParams({
@@ -25,6 +26,7 @@ export function adminPostsListParams({
   status,
   sortBy,
   search,
+  taxonomy,   // ✅ 新增
 }: UsePostsOptions): GetPostsInput {
   return {
     offset: (page - 1) * ADMIN_ITEMS_PER_PAGE,
@@ -33,12 +35,21 @@ export function adminPostsListParams({
     sortDir: "DESC",
     sortBy,
     search: search || undefined,
+    taxonomy,   // ✅ 新增
   };
 }
 
-export function usePosts({ page, status, sortBy, search }: UsePostsOptions) {
+export function usePosts({
+  page,
+  status,
+  sortBy,
+  search,
+  taxonomy,   // ✅ 新增
+}: UsePostsOptions) {
   const postsQuery = useQuery({
-    ...adminPostsQuery(adminPostsListParams({ page, status, sortBy, search })),
+    ...adminPostsQuery(
+      adminPostsListParams({ page, status, sortBy, search, taxonomy }),
+    ),
     placeholderData: keepPreviousData,
   });
 

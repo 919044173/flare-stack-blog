@@ -122,7 +122,9 @@ export function PostPage({ post }: PostPageProps) {
         )}
 
         {/* Summary */}
-        <PostSummary summary={post.summary} />
+        <PostSummary 
+         summary={post.summary}
+         isMoment={post.category?.name === "动态"}/>
 
         {/* Markdown Content */}
         <div

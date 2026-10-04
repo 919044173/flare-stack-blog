@@ -112,7 +112,6 @@ export async function getPosts(
     ...filters
   } = options;
 
-  // 排除分类
   let excludeCategoryId: number | undefined;
   if (excludeCategoryName) {
     const category = await db.query.CategoriesTable.findFirst({
@@ -187,7 +186,6 @@ export async function getPosts(
     }
   }
 
-  // ✅ 挂 cover
   return rows.map((row) => ({
     ...row,
     cover:
@@ -584,12 +582,18 @@ export async function findPostBySlug(
   return { ...rest, tags };
 }
 
+// ✅ 改这里：加 .returning()
 export async function updatePost(
   db: DB,
   id: number,
   data: Partial<Omit<typeof PostsTable.$inferInsert, "id" | "createdAt">>,
 ) {
-  await db.update(PostsTable).set(data).where(eq(PostsTable.id, id));
+  const [updated] = await db
+    .update(PostsTable)
+    .set(data)
+    .where(eq(PostsTable.id, id))
+    .returning();
+  if (!updated) return null;
   return await findPostById(db, id);
 }
 

@@ -38,7 +38,7 @@ export function ArchivePanel({ posts, isMoment = false }: ArchivePanelProps) {
 
           {isMoment ? (
             // 动态模式：竖向卡片列表
-            <div className="flex flex-col gap-6 mt-3">
+            <div className="flex flex-col gap-10 mt-3">
               {groupedPosts[year].map((post) => (
                 <ArchivePost key={post.id} post={post} isMoment={isMoment} />
               ))}

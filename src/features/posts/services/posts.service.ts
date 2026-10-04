@@ -50,7 +50,6 @@ function stripPublicSnapshot<
 
 /**
  * 从 TipTap contentJson 里提取纯文本。
- * 用于动态没写摘要时，自动用正文前 N 字兜底。
  */
 function extractPlainText(node: unknown): string {
   if (!node || typeof node !== "object") return "";
@@ -64,7 +63,6 @@ function extractPlainText(node: unknown): string {
 
 /**
  * 从 TipTap contentJson 里提取第一张图片的 src。
- * 用于动态没设封面时，用正文第一张图当封面。
  */
 function extractFirstImageSrc(node: unknown): string | null {
   if (!node || typeof node !== "object") return null;
@@ -362,6 +360,7 @@ export async function getPosts(context: DbContext, data: GetPostsInput) {
     publicOnly: data.publicOnly,
     search: data.search,
     taxonomy: data.taxonomy,
+    excludeCategoryName: data.excludeCategoryName,   // ✅ 新增
     sortDir: data.sortDir,
     sortBy: data.sortBy,
     includeContent: data.includeContent,

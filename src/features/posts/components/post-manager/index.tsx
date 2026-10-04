@@ -9,7 +9,7 @@ import { orpc, orpcClient } from "@/lib/orpc";
 import { ADMIN_ITEMS_PER_PAGE } from "@/lib/constants";
 import { useContentMotion } from "@/hooks/use-motion";
 import { m } from "@/paraglide/messages";
-import type { GetPostsInput } from "@/features/posts/schema/posts.schema";   // ✅ 新增
+import type { GetPostsInput } from "@/features/posts/schema/posts.schema";
 import { PostRow, PostsToolbar } from "./components";
 import ConfirmationModal from "@/components/ui/confirmation-modal";
 import { useListScroll } from "./hooks/use-list-scroll";
@@ -23,7 +23,8 @@ interface PostManagerProps {
   status: StatusFilter;
   sortBy: SortField;
   search: string;
-  taxonomy?: GetPostsInput["taxonomy"];   // ✅ 新增
+  taxonomy?: GetPostsInput["taxonomy"];
+  excludeCategoryName?: string;   // ✅ 新增
   onPageChange: (page: number) => void;
   onStatusChange: (status: StatusFilter) => void;
   onSortByChange: (sortBy: SortField) => void;
@@ -36,7 +37,8 @@ export function PostManager({
   status,
   sortBy,
   search,
-  taxonomy,   // ✅ 新增
+  taxonomy,
+  excludeCategoryName,   // ✅ 新增
   onPageChange,
   onStatusChange,
   onSortByChange,
@@ -87,7 +89,7 @@ export function PostManager({
     isPlaceholderData,
     error,
     refetch,
-  } = usePosts({ page, status, sortBy, search, taxonomy });   // ✅ 加 taxonomy
+  } = usePosts({ page, status, sortBy, search, taxonomy, excludeCategoryName });   // ✅ 加 excludeCategoryName
   const contentRef = useRef<HTMLTableSectionElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   useListScroll(

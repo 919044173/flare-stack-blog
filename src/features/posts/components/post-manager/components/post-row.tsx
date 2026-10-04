@@ -1,5 +1,8 @@
 import { formatPublicPostDate } from "@/features/posts/utils/format-public-post-date";
-import { getPublicImageSrc, PUBLIC_IMAGE_WIDTH } from "@/features/media/utils/media.utils";
+import {
+  getPublicImageSrc,
+  PUBLIC_IMAGE_WIDTH,
+} from "@/features/media/utils/media.utils";
 import { ClientOnly, Link } from "@tanstack/react-router";
 import { MoreHorizontal, Pin, Trash2 } from "lucide-react";
 import {
@@ -28,13 +31,14 @@ interface PostRowProps {
 
 export function PostRow({ post, sortBy, onDelete, editorState }: PostRowProps) {
   const rawTitle = post.title.trim();
-  const title = rawTitle || m.common_untitled();
+  const fallbackTitle = m.common_untitled();
+  const title = rawTitle || fallbackTitle;
   const date = post[sortBy];
 
   // ✅ 无标题时用摘要兜底
   const displayText = rawTitle
     ? rawTitle
-    : post.summary?.trim() || m.common_untitled();
+    : post.summary?.trim() || fallbackTitle;
 
   return (
     <tr>
@@ -50,14 +54,20 @@ export function PostRow({ post, sortBy, onDelete, editorState }: PostRowProps) {
               aria-label={title}
             >
               <img
-                src={getPublicImageSrc(post.cover.url, PUBLIC_IMAGE_WIDTH.cover)}
+                src={getPublicImageSrc(
+                  post.cover.url,
+                  PUBLIC_IMAGE_WIDTH.cover,
+                )}
                 alt=""
                 loading="lazy"
                 className="post-list-cover-img"
               />
             </Link>
           ) : (
-            <span className="post-list-cover post-list-cover-empty" aria-hidden="true" />
+            <span
+              className="post-list-cover post-list-cover-empty"
+              aria-hidden="true"
+            />
           )}
 
           <span className="post-list-pin">
@@ -191,20 +201,29 @@ function PostRowMenu({
               role="menu"
               aria-label={m.admin_posts_more_named({ title })}
               className="post-row-menu fuwari-popover-motion"
-              data-state={open ? "open" : "closed"}
+              data-state={open ? "open" : "closing"}
+              inert={!open}
+              aria-hidden={!open}
               style={position}
-              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setOpen(false);
+                  triggerRef.current?.focus({ preventScroll: true });
+                }
+              }}
             >
               <button
                 type="button"
                 role="menuitem"
                 onClick={() => {
-                  onDelete(triggerRef.current);
                   setOpen(false);
+                  onDelete(triggerRef.current);
                 }}
               >
                 <Trash2 size={15} />
-                {m.admin_posts_action_delete()}
+                {m.admin_posts_action_delete_post()}
               </button>
             </div>,
             document.body,

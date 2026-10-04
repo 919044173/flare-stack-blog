@@ -13,7 +13,8 @@
     "App": { "type": "worker", "cache": { "enabled": true } },
   },
   "observability": {
-    "enabled": true
+    "enabled": true,
+    "head_sampling_rate": 0.1
   },
   "keep_vars": true,
   "routes": [

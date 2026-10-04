@@ -42,7 +42,7 @@ export function ArchivePanel({ posts, isMoment = false }: ArchivePanelProps) {
       <div key={post.id}>
         {index > 0 && (
           <div className="flex items-center gap-4 my-6 text-xs fuwari-text-30">
-            <span className="flex-1 border-t border-dashed border-black/15 dark:border-white/15" />
+            <span className="flex-1 border-t border-dashed border-black/25 dark:border-white/15" />
             <span className="px-2 select-none">≽^⚈⩊⚈^≼</span>
             <span className="flex-1 border-t border-dashed border-black/15 dark:border-white/15" />
           </div>

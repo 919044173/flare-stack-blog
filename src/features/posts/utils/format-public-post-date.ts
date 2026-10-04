@@ -15,6 +15,23 @@ const formats = {
       month: "2-digit",
       day: "2-digit",
     }),
+    fullWithTime: new Intl.DateTimeFormat("zh-CN", {
+      timeZone: "UTC",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }),
+    shortWithTime: new Intl.DateTimeFormat("zh-CN", {
+      timeZone: "UTC",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }),
   },
   en: {
     full: new Intl.DateTimeFormat("en-US", {
@@ -28,6 +45,23 @@ const formats = {
       month: "2-digit",
       day: "2-digit",
     }),
+    fullWithTime: new Intl.DateTimeFormat("en-US", {
+      timeZone: "UTC",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }),
+    shortWithTime: new Intl.DateTimeFormat("en-US", {
+      timeZone: "UTC",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }),
   },
 };
 
@@ -35,11 +69,17 @@ export function formatPublicPostDate(
   value: Date | string | number | null | undefined,
   {
     monthDay = false,
+    withTime = false,
     locale = getLocale(),
-  }: { monthDay?: boolean; locale?: "zh" | "en" } = {},
+  }: { monthDay?: boolean; withTime?: boolean; locale?: "zh" | "en" } = {},
 ) {
   if (value == null) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
-  return formats[locale][monthDay ? "short" : "full"].format(date);
+  const key = `${monthDay ? "short" : "full"}${withTime ? "WithTime" : ""}` as
+    | "full"
+    | "short"
+    | "fullWithTime"
+    | "shortWithTime";
+  return formats[locale][key].format(date);
 }

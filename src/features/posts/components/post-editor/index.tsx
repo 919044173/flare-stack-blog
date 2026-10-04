@@ -32,6 +32,7 @@ export function PostEditor({ initialData, onSave }: PostEditorProps) {
     publishedAt: initialData.publishedAt,
     pinnedAt: initialData.pinnedAt,
     tagIds: initialData.tagIds,
+    coverIsManual: initialData.coverIsManual,   // ✅ 新增
     categoryId: initialData.categoryId,
     hasPublicSnapshot: initialData.hasPublicSnapshot,
     serverToday: initialData.serverToday,

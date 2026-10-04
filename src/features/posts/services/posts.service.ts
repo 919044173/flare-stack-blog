@@ -525,7 +525,7 @@ export async function publishPost(
 
   // ✅ 首次发布：填当前时刻；重新发布：保留原发布时间
 const normalizedContent = normalizePostContent(post.contentJson);
-const isFirstPublish = post.status !== "published";
+const isFirstPublish = !post.publishedAt;
 const publishedAt = isFirstPublish ? new Date() : post.publishedAt;
 
 await PostRepo.updatePost(context.db, post.id, {

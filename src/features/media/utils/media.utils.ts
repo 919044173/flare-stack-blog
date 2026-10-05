@@ -1,8 +1,7 @@
 // ==========================================
-// 1. 全局配置：你的 R2 自定义域名
-// ⚠️ 请确认这里是你在 Cloudflare R2 绑定的实际域名，末尾不要带斜杠
+// 全局配置：你的 R2 自定义域名
 // ==========================================
-const R2_PUBLIC_DOMAIN = "https://img.ryn.us.ci"; 
+export const R2_PUBLIC_DOMAIN = "https://img.ryn.us.ci"; 
 
 export function getContentTypeFromKey(key: string): string | undefined {
   const extension = key.split(".").pop()?.toLowerCase();
@@ -21,36 +20,34 @@ export function getContentTypeFromKey(key: string): string | undefined {
 export function generateKey(fileName: string): string {
   const uuid = crypto.randomUUID();
   const extension = fileName.split(".").pop()?.toLowerCase() || "bin";
-
   return `${uuid}.${extension}`;
 }
 
 /**
- * 从图片 URL 中提取 R2 key
- * 支持格式：
- * - /images/${key}
- * - /images/${key}?quality=80&format=webp
- * - https://domain.com/images/${key}?quality=80
+ * 从完整 URL 中提取 R2 存储桶里的纯文件名（key）
+ * 例子：
+ *   输入：https://img.ryn.us.ci/images/478c7895.png?width=800
+ *   输出：478c7895.png
  */
 export function extractImageKey(src: string): string | undefined {
   if (!src) return undefined;
+  
+  // 如果直接是纯文件名（没有 http），直接返回
+  if (!src.startsWith("http")) {
+    // 去掉可能存在的参数
+    return src.split("?")[0].replace(/^\/?(images\/)?/, "");
+  }
 
-  const prefix = "/images/";
-  let pathname = "";
-
+  // 如果是完整 URL，提取 pathname 里的文件名
   try {
-    // 尝试解析为 URL
-    const url = new URL(src, "http://dummy.com"); // 传入 base 确保相对路径也能被解析
-    pathname = url.pathname;
+    const url = new URL(src);
+    // pathname 可能是 /images/478c7895.png
+    const path = url.pathname;
+    // 剥掉 /images/ 前缀，拿到纯文件名
+    return path.replace(/^\/?(images\/)?/, "");
   } catch {
-    // 极少数情况解析失败，手动截断 query
-    pathname = src.split("?")[0];
+    return undefined;
   }
-
-  if (pathname.startsWith(prefix)) {
-    return pathname.replace(prefix, "");
-  }
-  return undefined;
 }
 
 export function isGifKey(key: string, contentType?: string | null) {
@@ -65,11 +62,11 @@ export const PUBLIC_IMAGE_WIDTH = {
 } as const;
 
 /**
- * 获取原图 URL（用于正文大图，无参数，纯 CDN 静态缓存）
- * ✅ 已修改：去掉了 /images/ 前缀，直接跟在域名后
+ * 获取原图 URL
+ * ✅ 路径格式：https://img.ryn.us.ci/images/xxx.png
  */
 export function getOriginalImageUrl(key: string) {
-  return `${R2_PUBLIC_DOMAIN}/${key}`;
+  return `${R2_PUBLIC_DOMAIN}/images/${key}`;
 }
 
 export function hasImageTransformParams(searchParams: URLSearchParams) {
@@ -82,38 +79,34 @@ export function hasImageTransformParams(searchParams: URLSearchParams) {
 }
 
 /**
- * 获取压缩后的图片 URL（用于缩略图、头像，触发 Cloudflare 图像转换）
- * ✅ 已修改：去掉了 /images/ 前缀
+ * 获取压缩后的图片 URL
+ * ✅ 路径格式：https://img.ryn.us.ci/images/xxx.png?quality=80&width=800
  */
 export function getOptimizedImageUrl(key: string, width?: number) {
   if (isGifKey(key)) {
-    return `${R2_PUBLIC_DOMAIN}/${key}?original=true`;
+    return `${R2_PUBLIC_DOMAIN}/images/${key}?original=true`;
   }
-  return `${R2_PUBLIC_DOMAIN}/${key}?quality=80${width ? `&width=${width}` : ""}`;
+  return `${R2_PUBLIC_DOMAIN}/images/${key}?quality=80${width ? `&width=${width}` : ""}`;
 }
 
 /**
- * 统一入口：根据 src 提取 key，重新生成带域名的完整 URL
- * ✅ 已修改：拼装时去掉了 /images/
+ * 统一的图片入口函数
+ * 逻辑：从任意传入的 src 提取文件名，然后用标准路径重新拼一遍。
  */
 export function getPublicImageSrc(src: string, width: number) {
   const key = extractImageKey(src);
-  if (!key) return src;
-  const version = new URL(src, "http://dummy.com").searchParams.get("v");
-  const optimized = getOptimizedImageUrl(key, width);
-  if (!version) return optimized;
-  const next = new URL(optimized, "http://dummy.com");
-  next.searchParams.set("v", version);
-  // 重新拼回 R2_PUBLIC_DOMAIN，确保完整路径
-  return `${R2_PUBLIC_DOMAIN}${next.pathname}${next.search}`;
+  if (!key) return src; // 如果提不出文件名，原样返回
+  
+  // 用提取出的文件名，拼接成最终带参数的标准 URL
+  return getOptimizedImageUrl(key, width);
 }
 
+// 下面的 SEO 和 JSON-LD 构建函数保持原样，直接复制你之前的即可
 export function buildTransformOptions(
   searchParams: URLSearchParams,
   accept: string,
 ) {
   const transformOptions: Record<string, unknown> = { quality: 80 };
-
   if (searchParams.has("width")) {
     const width = Number.parseInt(searchParams.get("width")!, 10);
     if (!Number.isNaN(width) && width > 0) transformOptions.width = width;
@@ -128,19 +121,10 @@ export function buildTransformOptions(
       transformOptions.quality = quality;
   }
   if (searchParams.has("fit")) transformOptions.fit = searchParams.get("fit");
-
-  if (/image\/avif/.test(accept)) {
-    transformOptions.format = "avif";
-  } else if (/image\/webp/.test(accept)) {
-    transformOptions.format = "webp";
-  }
-
+  if (/image\/avif/.test(accept)) transformOptions.format = "avif";
+  else if (/image\/webp/.test(accept)) transformOptions.format = "webp";
   return transformOptions;
 }
-
-// ==========================================
-// 以下为 SEO 和 JSON-LD 的构建函数，保持原样
-// ==========================================
 
 type ArticleJsonLdInput = {
   authorName: string;
@@ -162,17 +146,11 @@ function buildCanonicalHref(
 ) {
   const normalizedPath =
     pathname === "/" ? "/" : pathname.replace(/\/+$/, "") || "/";
-
   if (!searchParams) return normalizedPath;
-
   const params = new URLSearchParams();
-
   Object.entries(searchParams).forEach(([key, value]) => {
-    if (value) {
-      params.set(key, value);
-    }
+    if (value) params.set(key, value);
   });
-
   const query = params.toString();
   return query ? `${normalizedPath}?${query}` : normalizedPath;
 }
@@ -186,10 +164,7 @@ export function buildCanonicalUrl(
 }
 
 export function canonicalLink(href: string) {
-  return {
-    rel: "canonical",
-    href,
-  } as const;
+  return { rel: "canonical", href } as const;
 }
 
 export function buildArticleJsonLd({
@@ -202,33 +177,14 @@ export function buildArticleJsonLd({
     "@type": "Article",
     headline: post.title,
     url: canonicalHref,
-    mainEntityOfPage: {
-      "@type": "WebPage",
-      "@id": canonicalHref,
-    },
-    author: {
-      "@type": "Person",
-      name: authorName,
-    },
+    mainEntityOfPage: { "@type": "WebPage", "@id": canonicalHref },
+    author: { "@type": "Person", name: authorName },
     dateModified: new Date(post.updatedAt).toISOString(),
   };
-
-  if (post.summary) {
-    jsonLd.description = post.summary;
-  }
-
-  if (post.publishedAt) {
-    jsonLd.datePublished = new Date(post.publishedAt).toISOString();
-  }
-
+  if (post.summary) jsonLd.description = post.summary;
+  if (post.publishedAt) jsonLd.datePublished = new Date(post.publishedAt).toISOString();
   const keywords = post.tags?.map((tag) => tag.name).filter(Boolean);
-  if (keywords?.length) {
-    jsonLd.keywords = keywords;
-  }
-
-  if (post.image) {
-    jsonLd.image = post.image;
-  }
-
+  if (keywords?.length) jsonLd.keywords = keywords;
+  if (post.image) jsonLd.image = post.image;
   return JSON.stringify(jsonLd);
 }

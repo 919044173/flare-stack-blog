@@ -19,11 +19,12 @@ export const blogConfig = {
     webApp192: "/web-app-manifest-192x192.png",
     webApp512: "/web-app-manifest-512x512.png",
   },
-  theme: {
-    fuwari: {
-      homeBg: "/images/home-bg.webp",
-      avatar: "/images/avatar.png",
-      primaryHue: 250,
-    },
+theme: {
+  fuwari: {
+    // ✅ 默认背景图路径，指向 R2 上的 asset 目录
+    homeBg: "/asset/themes/fuwari/home-bg.webp",
+    // ✅ 默认头像路径，指向 R2 上的 asset 目录
+    avatar: "/asset/themes/fuwari/avatar.png",
+    primaryHue: 250,
   },
-} as const satisfies SiteConfig;
+},

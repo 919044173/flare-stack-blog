@@ -125,7 +125,7 @@ export function SiteStudio() {
           <OverlayUpload
             name="site.theme.fuwari.homeBg"
             // ✅ 纯文件名，后端会自动加 asset/themes/fuwari/ 前缀
-            assetPath="themes/fuwari/home-bg.webp"
+            assetPath="/themes/fuwari/home-bg.webp"
             accept={IMAGE_ACCEPT}
             className="site-banner-upload"
             label={
@@ -147,7 +147,7 @@ export function SiteStudio() {
             <OverlayUpload
               name="site.theme.fuwari.avatar"
               // ✅ 纯文件名，后端会自动加 asset/themes/fuwari/ 前缀
-              assetPath="themes/fuwari/avatar.png"
+              assetPath="/themes/fuwari/avatar.png"
               accept={IMAGE_ACCEPT}
               className="site-avatar-upload"
               label={

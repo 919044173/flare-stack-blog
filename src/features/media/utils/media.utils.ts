@@ -94,10 +94,23 @@ export function getOptimizedImageUrl(key: string, width?: number) {
  * 逻辑：从任意传入的 src 提取文件名，然后用标准路径重新拼一遍。
  */
 export function getPublicImageSrc(src: string, width: number) {
+  if (!src) return src;
+
+  // 1. 处理系统设置里的静态资源（存的是 /asset/themes/fuwari/xxx）
+  if (src.startsWith("/asset/")) {
+    // 如果传进来的是相对路径，直接拼域名
+    if (src.startsWith("/")) {
+      return `${R2_PUBLIC_DOMAIN}${src}`;
+    }
+    // 如果以后存了绝对路径，直接用
+    return src;
+  }
+
+  // 2. 处理普通文章图片（存的是 /images/xxx）
   const key = extractImageKey(src);
-  if (!key) return src; // 如果提不出文件名，原样返回
+  if (!key) return src;
   
-  // 用提取出的文件名，拼接成最终带参数的标准 URL
+  // 如果有压缩需求，走带参数的优化地址
   return getOptimizedImageUrl(key, width);
 }
 

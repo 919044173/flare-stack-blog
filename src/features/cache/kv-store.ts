@@ -111,11 +111,10 @@ export async function remember<T extends z.ZodTypeAny>(
     return data;
   })();
 
-  // 3. 存入 Map，请求结束后清理
+  // 3. 存入 Map，请求结束后清理（用 then(cleanup, cleanup) 避免 unhandled rejection）
   inFlightRemember.set(serializedKey, promise);
-  promise.finally(() => {
-    inFlightRemember.delete(serializedKey);
-  });
+  const cleanup = () => inFlightRemember.delete(serializedKey);
+  promise.then(cleanup, cleanup);
 
   return promise as Promise<z.infer<T>>;
 }

@@ -93,10 +93,20 @@ export function getOptimizedImageUrl(key: string, width?: number) {
  * 统一的图片入口函数
  * 逻辑：从任意传入的 src 提取文件名，然后用标准路径重新拼一遍。
  */
+
+/**
+ * 统一的图片入口函数
+ * 逻辑：从任意传入的 src 提取文件名，然后用标准路径重新拼一遍。
+ */
 export function getPublicImageSrc(src: string, width: number) {
+  // ✅ 新增逻辑：如果已经是 R2 上的 asset 资源，直接返回原 URL，不进行二次拼接
+  if (src.includes("/asset/")) {
+    return src;
+  }
+
   const key = extractImageKey(src);
   if (!key) return src; // 如果提不出文件名，原样返回
-  
+
   // 用提取出的文件名，拼接成最终带参数的标准 URL
   return getOptimizedImageUrl(key, width);
 }

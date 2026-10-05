@@ -96,20 +96,22 @@ export function getOptimizedImageUrl(key: string, width?: number) {
 export function getPublicImageSrc(src: string, width: number) {
   if (!src) return src;
 
-  // 1. 针对系统设置里的静态资源（例如 /asset/themes/fuwari/xxx）
+  // 1. 处理系统设置里的静态资源（/asset/ 开头，直接拼域名，不加 /images/）
   if (src.startsWith("/asset/")) {
-    return `${R2_PUBLIC_DOMAIN}${src}`; // 直接拼域名，不加 /images/
+    return `${R2_PUBLIC_DOMAIN}${src}`;
   }
 
-  // 2. 针对老路径或普通图片（例如 /images/xxx）
-  // 确保不再重复叠加 /images/
-  if (src.startsWith("/images/")) {
-     return `${R2_PUBLIC_DOMAIN}${src}`;
+  // 2. 如果已经是带域名的绝对路径，直接返回
+  if (src.startsWith("http")) {
+    return src;
   }
 
-  // 3. 兜底：如果数据库里存的是纯文件名（xxx.png），按文章图片处理
+  // 3. 处理老格式（/images/xxx.png）
+  // 这里的 extractImageKey 会剥掉 /images/，得到纯文件名 xxx.png
   const key = extractImageKey(src);
   if (!key) return src;
+  
+  // 关键：用 getOptimizedImageUrl 重新拼成 https://img.ryn.us.ci/images/xxx.png?...
   return getOptimizedImageUrl(key, width);
 }
 

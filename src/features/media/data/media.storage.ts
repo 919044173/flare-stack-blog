@@ -1,4 +1,4 @@
-import { generateKey } from "@/features/media/utils/media.utils";
+import { generateKey, R2_PUBLIC_DOMAIN } from "@/features/media/utils/media.utils";
 
 export async function putToR2(
   env: Env,
@@ -6,9 +6,12 @@ export async function putToR2(
   key = generateKey(image.name),
 ) {
   const contentType = image.type;
-  const url = `/images/${key}`;
+  
+  // ✅ 数据库里存的完整绝对路径（带 images/）
+  const url = `${R2_PUBLIC_DOMAIN}/images/${key}`;
 
-  await env.R2.put(key, image.stream(), {
+  // ✅ 物理存储路径：加上 images/ 前缀，真正存进 images 文件夹
+  await env.R2.put(`images/${key}`, image.stream(), {
     httpMetadata: {
       contentType,
     },
@@ -27,11 +30,13 @@ export async function putToR2(
 }
 
 export async function deleteFromR2(env: Env, key: string) {
-  await env.R2.delete(key);
+  // 物理删除时也要带上 images/ 前缀
+  await env.R2.delete(`images/${key}`);
 }
 
 export async function getFromR2(env: Env, key: string) {
-  return await env.R2.get(key);
+  // 读取时也要带上 images/ 前缀
+  return await env.R2.get(`images/${key}`);
 }
 
 /**
@@ -44,10 +49,14 @@ export async function putSiteAsset(
   assetPath: string,
 ): Promise<{ key: string; url: string }> {
   const key = `asset/${assetPath}`;
-  await env.R2.put(key, file.stream(), {
+  
+  // ✅ 物理存储路径：加上 images/ 前缀
+  await env.R2.put(`images/${key}`, file.stream(), {
     httpMetadata: {
       contentType: file.type,
     },
   });
-  return { key, url: `/images/${key}` };
+  
+  // ✅ 返回绝对路径
+  return { key, url: `${R2_PUBLIC_DOMAIN}/images/${key}` };
 }

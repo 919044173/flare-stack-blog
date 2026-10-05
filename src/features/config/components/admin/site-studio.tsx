@@ -147,7 +147,7 @@ export function SiteStudio() {
             <OverlayUpload
               name="site.theme.fuwari.avatar"
               // ✅ 纯文件名，后端会自动加 asset/themes/fuwari/ 前缀
-              assetPath="avatar.png"
+              assetPath="themes/fuwari/avatar.png"
               accept={IMAGE_ACCEPT}
               className="site-avatar-upload"
               label={

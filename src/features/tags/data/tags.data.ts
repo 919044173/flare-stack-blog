@@ -74,6 +74,15 @@ export async function findTagById(db: DB, id: number) {
 }
 
 /**
+ * 按名字查找标签
+ */
+export async function findTagByName(db: DB, name: string) {
+  return await db.query.TagsTable.findFirst({
+    where: eq(TagsTable.name, name),
+  });
+}
+
+/**
  * Insert a new tag
  */
 export async function insertTag(db: DB, data: typeof TagsTable.$inferInsert) {

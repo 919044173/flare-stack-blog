@@ -48,7 +48,7 @@ export async function putSiteAsset(
   file: File,
   assetPath: string,
 ): Promise<{ key: string; url: string }> {
-  // ✅ 物理存储：把系统设置里的静态资源统一放进 asset/themes/fuwari/ 目录
+  // ✅ 核心：后端自动拼接 asset/themes/fuwari/ 前缀
   const key = `asset/themes/fuwari/${assetPath}`;
   
   await env.R2.put(key, file.stream(), {
@@ -57,6 +57,6 @@ export async function putSiteAsset(
     },
   });
   
-  // ✅ 返回相对路径（/ 开头），满足系统设置输入框的校验规则
+  // ✅ 返回相对路径（/ 开头），满足前端输入框校验
   return { key, url: `/${key}` };
 }

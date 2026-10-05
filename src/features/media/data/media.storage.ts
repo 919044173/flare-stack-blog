@@ -1,5 +1,4 @@
 import { generateKey, R2_PUBLIC_DOMAIN } from "@/features/media/utils/media.utils";
-import { R2_PUBLIC_DOMAIN } from "./media.utils"; // 或 "@/features/media/utils/media.utils"
 
 export async function putToR2(
   env: Env,
@@ -7,7 +6,7 @@ export async function putToR2(
   key = generateKey(image.name),
 ) {
   const contentType = image.type;
-  
+
   // ✅ 数据库里存的完整绝对路径（带 images/）
   const url = `${R2_PUBLIC_DOMAIN}/images/${key}`;
 
@@ -49,16 +48,15 @@ export async function putSiteAsset(
   file: File,
   assetPath: string,
 ): Promise<{ key: string; url: string }> {
-  // ✅ 保持相对路径
+  // ✅ 物理存储路径：直接存进根目录的 asset 文件夹，去掉 images/ 前缀
   const key = `asset/${assetPath}`;
 
-  // ✅ 物理存储：直接存进根目录的 asset 文件夹，去掉 images/ 前缀
   await env.R2.put(key, file.stream(), {
     httpMetadata: {
       contentType: file.type,
     },
   });
 
-  // ✅ 返回绝对路径，注意这里是 /asset/ 而不是 /images/asset/
+  // ✅ 返回绝对路径，拼上 R2 域名
   return { key, url: `${R2_PUBLIC_DOMAIN}/${key}` };
 }

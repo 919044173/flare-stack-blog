@@ -48,15 +48,16 @@ export async function putSiteAsset(
   file: File,
   assetPath: string,
 ): Promise<{ key: string; url: string }> {
+  // ✅ 保持相对路径
   const key = `asset/${assetPath}`;
-  
-  // ✅ 物理存储路径：加上 images/ 前缀
-  await env.R2.put(`images/${key}`, file.stream(), {
+
+  // ✅ 物理存储：直接存进根目录的 asset 文件夹，去掉 images/ 前缀
+  await env.R2.put(key, file.stream(), {
     httpMetadata: {
       contentType: file.type,
     },
   });
-  
-  // ✅ 返回绝对路径
-  return { key, url: `${R2_PUBLIC_DOMAIN}/images/${key}` };
+
+  // ✅ 返回绝对路径，注意这里是 /asset/ 而不是 /images/asset/
+  return { key, url: `${R2_PUBLIC_DOMAIN}/${key}` };
 }

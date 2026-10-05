@@ -24,8 +24,8 @@ export function PostEditorMetadata({
   onGenerateSlug,
 }: PostEditorMetadataProps) {
   const { data: categories } = useQuery(categoryOptionsQuery);
-  const momentCategory = categories?.find((c) => c.name === "动态");
-  const isMoment = post.categoryId === momentCategory?.id;
+  const currentCategory = categories?.find((c) => c.id === post.categoryId);
+  const isMoment = currentCategory?.name === "动态";
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -35,15 +35,15 @@ export function PostEditorMetadata({
           onChange={(next) => onPostChange(next)}
         />
 
-        <label className="grid gap-2 text-xs fuwari-text-50">
-          {m.editor_meta_category()}
-          <CategorySelect
-            value={post.categoryId}
-            onChange={(categoryId) => onPostChange({ categoryId })}
-          />
-        </label>
+        {/* 分类：只读显示 */}
+        <div className="grid gap-2 text-xs fuwari-text-50">
+          <span>{m.editor_meta_category()}</span>
+          <div className="flex h-10 items-center rounded-xl bg-(--fuwari-btn-regular-bg) px-3 text-sm fuwari-text-90">
+            {currentCategory?.name ?? "未设置"}
+          </div>
+        </div>
 
-        {/* 动态：自动加"动态"标签，不显示选择器 */}
+        {/* 动态：不显示标签选择器（后端自动加"动态"标签） */}
         {!isMoment && (
           <div className="grid gap-2">
             <p className="text-xs fuwari-text-50">{m.editor_meta_tags()}</p>

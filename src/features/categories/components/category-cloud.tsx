@@ -9,6 +9,11 @@ import { m } from "@/paraglide/messages";
 
 const COLLAPSE_THRESHOLD = 5;
 
+/** 系统保留分类：跳转到独立页面 */
+const RESERVED_CATEGORIES: Record<string, string> = {
+  动态: "/moments",
+};
+
 export function CategoriesSkeleton() {
   return (
     <div className="fuwari-card-base pb-4">
@@ -36,13 +41,11 @@ export function Categories() {
       collapsed={collapsed}
       onExpand={() => setExpanded(true)}
     >
-      {categories.map((category) => (
-        <Link
-          key={category.id}
-          to="/posts"
-          search={withCategoryFilter(category.name)}
-          className="flex items-center w-full h-10 rounded-lg pl-2 hover:pl-3 hover:bg-(--fuwari-btn-plain-bg-hover) active:bg-(--fuwari-btn-plain-bg-active) transition-all text-neutral-700 hover:text-(--fuwari-primary) dark:text-neutral-300 dark:hover:text-(--fuwari-primary)"
-        >
+      {categories.map((category) => {
+        const itemClassName =
+          "flex items-center w-full h-10 rounded-lg pl-2 hover:pl-3 hover:bg-(--fuwari-btn-plain-bg-hover) active:bg-(--fuwari-btn-plain-bg-active) transition-all text-neutral-700 hover:text-(--fuwari-primary) dark:text-neutral-300 dark:hover:text-(--fuwari-primary)";
+
+        const content = (
           <div className="flex items-center justify-between relative mr-2 w-full min-w-0">
             <div className="overflow-hidden text-left whitespace-nowrap text-ellipsis">
               {category.name}
@@ -51,8 +54,34 @@ export function Categories() {
               {category.postCount}
             </div>
           </div>
-        </Link>
-      ))}
+        );
+
+        // ✅ 系统保留分类（如"动态"）→ 跳到独立页面
+        const reservedPath = RESERVED_CATEGORIES[category.name];
+        if (reservedPath) {
+          return (
+            <Link
+              key={category.id}
+              to={reservedPath}
+              className={itemClassName}
+            >
+              {content}
+            </Link>
+          );
+        }
+
+        // 其他分类 → /posts?categoryName=xxx
+        return (
+          <Link
+            key={category.id}
+            to="/posts"
+            search={withCategoryFilter(category.name)}
+            className={itemClassName}
+          >
+            {content}
+          </Link>
+        );
+      })}
     </ExpandableSidebarCard>
   );
 }

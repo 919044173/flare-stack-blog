@@ -50,13 +50,14 @@ export async function putSiteAsset(
 ): Promise<{ key: string; url: string }> {
   const key = `asset/${assetPath}`;
   
-  // ✅ 物理存储路径：加上 images/ 前缀
+  // ✅ 物理存储：带上 images/ 前缀
   await env.R2.put(`images/${key}`, file.stream(), {
     httpMetadata: {
       contentType: file.type,
     },
   });
   
-  // ✅ 返回绝对路径
-  return { key, url: `${R2_PUBLIC_DOMAIN}/images/${key}` };
+  // ✅ 特殊处理：这里返回相对路径（以 / 开头），满足系统设置的校验规则。
+  // 同时，将来前端通过 getPublicImageSrc 渲染时，会自动拼成完整 R2 链接。
+  return { key, url: `/images/${key}` };
 }

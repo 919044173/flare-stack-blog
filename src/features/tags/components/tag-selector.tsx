@@ -9,6 +9,9 @@ import { cn } from "@/lib/utils";
 import { MOTION, useMotionPresence } from "@/hooks/use-motion";
 import { m } from "@/paraglide/messages";
 
+/** 系统保留标签：不参与用户手动选择 */
+const RESERVED_TAG_NAMES = new Set(["动态"]);
+
 interface TagSelectorProps {
   value: Array<number>;
   onChange: (value: Array<number>) => void;
@@ -31,30 +34,24 @@ export function TagSelector({
   const adminTagsQuery = tagsAdminQueryOptions();
   const adminTagsQueryKey = adminTagsQuery.queryKey;
 
-  // Use admin query options (Infinity staleTime)
   const {
     data: tags = [],
     isLoading: isTagsLoading,
     isError,
   } = useQuery(adminTagsQuery);
 
-  // Strict optimistic update following TanStack Query best practices
   const createTagMutation = useMutation({
     mutationFn: async (name: string) => orpcClient.tags.admin.create({ name }),
 
-    // When mutate is called (BEFORE the request)
     onMutate: async (newTagName) => {
-      // 1. Cancel any outgoing refetches (so they don't overwrite our optimistic update)
       await queryClient.cancelQueries({
         queryKey: adminTagsQueryKey,
       });
 
-      // 2. Snapshot the previous value for rollback
       const previousTags =
         queryClient.getQueryData<Array<Tag>>(adminTagsQueryKey);
 
-      // 3. Optimistically update the cache with a temporary tag
-      const tempId = -Math.round(Math.random() * 1000000); // Random negative ID
+      const tempId = -Math.round(Math.random() * 1000000);
       const optimisticTag: Tag = {
         id: tempId,
         name: newTagName,
@@ -71,18 +68,13 @@ export function TagSelector({
         },
       );
 
-      // 4. Update selection with optimistic ID immediately
-      // This makes it feel instant to the user
       onChange([...valueRef.current, optimisticTag.id]);
       setSearchTerm("");
 
-      // Return context with snapshot and tempId
       return { previousTags, optimisticTagId: optimisticTag.id };
     },
 
-    // If mutation succeeds, we need to swap the optimistic ID with the real ID
     onSuccess: (newTag, _variables, context) => {
-      // 1. Update the cache to replace the temp tag with the real one
       queryClient.setQueryData(
         adminTagsQueryKey,
         (old: Array<Tag> | undefined) => {
@@ -93,8 +85,6 @@ export function TagSelector({
         },
       );
 
-      // 2. Update the parent selection to swap ID
-      // This loop is critical to prevent "flicker" or losing selection
       onChange(
         valueRef.current.map((id) =>
           id === context.optimisticTagId ? newTag.id : id,
@@ -102,7 +92,6 @@ export function TagSelector({
       );
     },
 
-    // Always refetch after error or success for consistency
     onError: (_error, _newTagName, context) => {
       if (context?.previousTags) {
         queryClient.setQueryData(adminTagsQueryKey, context.previousTags);
@@ -123,16 +112,23 @@ export function TagSelector({
     },
   });
 
+  // ✅ 已选标签：排除"系统保留标签"
   const selectedTags = useMemo(
-    () => tags.filter((tag) => value.includes(tag.id)),
+    () =>
+      tags
+        .filter((tag) => !RESERVED_TAG_NAMES.has(tag.name))
+        .filter((tag) => value.includes(tag.id)),
     [tags, value],
   );
 
+  // ✅ 可选标签：排除"系统保留标签"
   const availableTags = useMemo(
     () =>
-      tags.filter((tag) =>
-        tag.name.toLowerCase().includes(searchTerm.toLowerCase()),
-      ),
+      tags
+        .filter((tag) => !RESERVED_TAG_NAMES.has(tag.name))
+        .filter((tag) =>
+          tag.name.toLowerCase().includes(searchTerm.toLowerCase()),
+        ),
     [tags, searchTerm],
   );
 
@@ -151,6 +147,9 @@ export function TagSelector({
       e.preventDefault();
       const trimmedTerm = searchTerm.trim();
       if (!trimmedTerm) return;
+
+      // 不允许手动创建"系统保留标签"
+      if (RESERVED_TAG_NAMES.has(trimmedTerm)) return;
 
       const exactMatch = tags.find(
         (t) => t.name.toLowerCase() === trimmedTerm.toLowerCase(),
@@ -175,7 +174,6 @@ export function TagSelector({
     }
   };
 
-  // Click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -189,12 +187,13 @@ export function TagSelector({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Only show loading if we are fetching tags for the FIRST time and have no data
   const isInitialLoading = isTagsLoading && tags.length === 0;
+
+  // 当前搜索词是否是"系统保留标签"
+  const isReservedSearch = RESERVED_TAG_NAMES.has(searchTerm.trim());
 
   return (
     <div className="relative group" ref={containerRef}>
-      {/* Main Container */}
       <div
         onClick={() => {
           if (!disabled && !isInitialLoading) {
@@ -208,7 +207,6 @@ export function TagSelector({
           "flex flex-wrap items-center gap-1.5",
         )}
       >
-        {/* Selected Tags */}
         {selectedTags.map((tag) => (
           <span
             key={tag.id}
@@ -229,7 +227,6 @@ export function TagSelector({
           </span>
         ))}
 
-        {/* Input */}
         <input
           ref={inputRef}
           type="text"
@@ -254,7 +251,6 @@ export function TagSelector({
           disabled={disabled || isInitialLoading}
         />
 
-        {/* Loading Spinner */}
         {(isInitialLoading || createTagMutation.isPending) && (
           <div className="mr-1 animate-spin fuwari-text-50">
             <Loader2 size={12} />
@@ -262,7 +258,6 @@ export function TagSelector({
         )}
       </div>
 
-      {/* Dropdown Menu */}
       {present && (
         <div
           data-state={open && !disabled ? "open" : "closing"}
@@ -270,8 +265,9 @@ export function TagSelector({
           className="fuwari-popover-motion absolute top-full left-0 z-50 mt-1 w-full rounded-xl bg-(--fuwari-card-bg) shadow-md ring-1 ring-(--fuwari-input-border)"
         >
           <div className="max-h-50 w-full overflow-y-auto overflow-x-hidden p-1">
-            {/* Create Option */}
+            {/* 创建选项：排除"系统保留标签" */}
             {searchTerm &&
+              !isReservedSearch &&
               !tags.some(
                 (t) => t.name.toLowerCase() === searchTerm.toLowerCase(),
               ) && (
@@ -284,7 +280,6 @@ export function TagSelector({
                 </div>
               )}
 
-            {/* Filtered List */}
             {isError ? (
               <div className="p-2 text-center text-xs text-(--fuwari-danger-fg)">
                 <p>{m.tag_selector_load_fail()}</p>

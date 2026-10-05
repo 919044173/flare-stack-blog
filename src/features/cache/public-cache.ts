@@ -1,5 +1,3 @@
-// src/features/cache/public-cache.ts
-
 import type { z } from "zod";
 import type { Duration } from "@/lib/duration";
 import { ms } from "@/lib/duration";
@@ -280,11 +278,10 @@ async function readEntry<T>(
     return data as T;
   })();
 
-  // 3. 存入 Map，请求结束后清理
+  // 3. 存入 Map，请求结束后清理（用 then(cleanup, cleanup) 避免 unhandled rejection）
   inFlightRequests.set(serializedKey, promise);
-  promise.finally(() => {
-    inFlightRequests.delete(serializedKey);
-  });
+  const cleanup = () => inFlightRequests.delete(serializedKey);
+  promise.then(cleanup, cleanup);
 
   return promise as Promise<T>;
 }
@@ -405,19 +402,6 @@ export function defineEntry<
 }
 
 export const invalidate = {
-
-/**
-  // 阅读量等高频事件：走令牌桶限流，连点合并
-  async postPopularityUpdated(context: InvalidateContext) {
-    await run("post-popularity.updated", context, {});
-    await purgeWorkersCache(
-      context.executionCtx,
-      purgeOptionsFor("post-popularity.updated", {}),
-      { throttleKey: "post-popularity.updated" },
-    );
-  },
-*/
-
   // 发布文章：立即生效（force），但 purge 仍走令牌桶
   async postPublished(context: InvalidateContext, params: { slug: string }) {
     await run("post.published", context, params, { force: true });

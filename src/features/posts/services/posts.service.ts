@@ -183,15 +183,6 @@ async function createPublishRevision(
   });
 }
 
-// ✅ 动态：自动加"动态"标签（覆盖用户设置）
-const isMoment = post.category?.name === "动态";
-if (isMoment) {
-  const momentTag = await TagRepo.findTagByName(context.db, "动态");
-  if (momentTag) {
-    await TagRepo.setPostTags(context.db, post.id, [momentTag.id]);
-  }
-}
-
 /**
  * 根据"是否动态"，自动处理摘要 + 封面。
  * - 动态：摘要 = 正文第一段的前 120 字（超长则加 "......"）
@@ -556,6 +547,15 @@ export async function publishPost(
   const post = await PostRepo.findPostById(context.db, data.id);
   if (!post) {
     return err({ reason: "POST_NOT_FOUND" });
+  }
+
+  // ✅ 动态：自动加"动态"标签（覆盖用户设置）
+  const isMoment = post.category?.name === "动态";
+  if (isMoment) {
+    const momentTag = await TagRepo.findTagByName(context.db, "动态");
+    if (momentTag) {
+      await TagRepo.setPostTags(context.db, post.id, [momentTag.id]);
+    }
   }
 
   // ✅ 首次发布：填当前时刻；重新发布：保留原发布时间

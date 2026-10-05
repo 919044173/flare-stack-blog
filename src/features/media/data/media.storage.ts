@@ -1,4 +1,5 @@
 import { generateKey, R2_PUBLIC_DOMAIN } from "@/features/media/utils/media.utils";
+import { R2_PUBLIC_DOMAIN } from "./media.utils"; // 或 "@/features/media/utils/media.utils"
 
 export async function putToR2(
   env: Env,

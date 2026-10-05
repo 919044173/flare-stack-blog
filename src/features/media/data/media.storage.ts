@@ -48,16 +48,15 @@ export async function putSiteAsset(
   file: File,
   assetPath: string,
 ): Promise<{ key: string; url: string }> {
-  const key = `asset/${assetPath}`;
+  // ✅ 物理存储：把系统设置里的静态资源统一放进 asset/themes/fuwari/ 目录
+  const key = `asset/themes/fuwari/${assetPath}`;
   
-  // ✅ 物理存储：带上 images/ 前缀
-  await env.R2.put(`images/${key}`, file.stream(), {
+  await env.R2.put(key, file.stream(), {
     httpMetadata: {
       contentType: file.type,
     },
   });
   
-  // ✅ 特殊处理：这里返回相对路径（以 / 开头），满足系统设置的校验规则。
-  // 同时，将来前端通过 getPublicImageSrc 渲染时，会自动拼成完整 R2 链接。
-  return { key, url: `/images/${key}` };
+  // ✅ 返回相对路径（/ 开头），满足系统设置输入框的校验规则
+  return { key, url: `/${key}` };
 }

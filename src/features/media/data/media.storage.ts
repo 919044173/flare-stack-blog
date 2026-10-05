@@ -6,57 +6,35 @@ export async function putToR2(
   key = generateKey(image.name),
 ) {
   const contentType = image.type;
-
-  // ✅ 数据库里存的完整绝对路径（带 images/）
   const url = `${R2_PUBLIC_DOMAIN}/images/${key}`;
-
-  // ✅ 物理存储路径：加上 images/ 前缀，真正存进 images 文件夹
   await env.R2.put(`images/${key}`, image.stream(), {
-    httpMetadata: {
-      contentType,
-    },
-    customMetadata: {
-      originalName: image.name,
-    },
+    httpMetadata: { contentType },
+    customMetadata: { originalName: image.name },
   });
-
-  return {
-    key,
-    url,
-    fileName: image.name,
-    mimeType: contentType,
-    sizeInBytes: image.size,
-  };
+  return { key, url, fileName: image.name, mimeType: contentType, sizeInBytes: image.size };
 }
 
 export async function deleteFromR2(env: Env, key: string) {
-  // 物理删除时也要带上 images/ 前缀
   await env.R2.delete(`images/${key}`);
 }
 
 export async function getFromR2(env: Env, key: string) {
-  // 读取时也要带上 images/ 前缀
   return await env.R2.get(`images/${key}`);
 }
 
-/**
- * Upload a site asset (favicon, theme images) to R2 with a fixed key.
- * No DB record; overwrites in place on re-upload.
- */
 export async function putSiteAsset(
   env: Env,
   file: File,
   assetPath: string,
 ): Promise<{ key: string; url: string }> {
-  // ✅ 物理存储路径：直接存进根目录的 asset 文件夹，去掉 images/ 前缀
+  // ✅ 确认一下：这里直接是 asset/，没有 images/
   const key = `asset/${assetPath}`;
 
+  // 这里如果报错，我们再排查
   await env.R2.put(key, file.stream(), {
-    httpMetadata: {
-      contentType: file.type,
-    },
+    httpMetadata: { contentType: file.type },
   });
 
-  // ✅ 返回绝对路径，拼上 R2 域名
+  // ✅ 返回正确链接
   return { key, url: `${R2_PUBLIC_DOMAIN}/${key}` };
 }

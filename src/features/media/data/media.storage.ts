@@ -48,15 +48,13 @@ export async function putSiteAsset(
   file: File,
   assetPath: string,
 ): Promise<{ key: string; url: string }> {
-  // ✅ 核心：后端自动拼接 asset/themes/fuwari/ 前缀
+  // ✅ 后端统一拼上目录，前端传什么文件名就存什么
   const key = `asset/themes/fuwari/${assetPath}`;
   
   await env.R2.put(key, file.stream(), {
-    httpMetadata: {
-      contentType: file.type,
-    },
+    httpMetadata: { contentType: file.type },
   });
   
-  // ✅ 返回相对路径（/ 开头），满足前端输入框校验
+  // ✅ 返回相对路径，满足前端输入框的 / 校验
   return { key, url: `/${key}` };
 }

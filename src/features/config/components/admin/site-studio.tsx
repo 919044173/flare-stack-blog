@@ -81,13 +81,13 @@ function previewSrc(value: unknown): string | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
 
-  // 1. 已经是绝对路径（带 http），直接返回
+  // 如果已经是绝对路径，直接返回
   if (trimmed.startsWith("http")) return trimmed;
 
-  // 2. 如果是相对路径，直接拼 R2 域名，不再加 images
+  // 如果是相对路径（/asset/...），拼上 R2 域名
   if (trimmed.startsWith("/")) {
-    // ✅ 改成了这样：
-    return `${R2_PUBLIC_DOMAIN}${trimmed}`; 
+    // ✅ 关键修改：这里去掉了 /images 前缀
+    return `${R2_PUBLIC_DOMAIN}${trimmed}`;
   }
 
   return null;

@@ -48,7 +48,7 @@ export async function putSiteAsset(
   file: File,
   assetPath: string,
 ): Promise<{ key: string; url: string }> {
-  // ✅ 后端统一加目录前缀，前端传进来的就是纯文件名
+  // 👇 路径写死为 asset/themes/fuwari/
   const key = `asset/themes/fuwari/${assetPath}`;
   
   await env.R2.put(key, file.stream(), {

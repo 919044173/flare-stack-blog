@@ -96,23 +96,17 @@ export function getOptimizedImageUrl(key: string, width?: number) {
 export function getPublicImageSrc(src: string, width: number) {
   if (!src) return src;
 
-  // 1. 处理系统设置里的静态资源（/asset/ 开头，直接拼域名，不加 /images/）
+  // 1. 如果是系统设置的头像/背景（/asset/ 开头），直接拼域名，不带 /images/
   if (src.startsWith("/asset/")) {
     return `${R2_PUBLIC_DOMAIN}${src}`;
   }
 
-  // 2. 如果已经是带域名的绝对路径，直接返回
-  if (src.startsWith("http")) {
-    return src;
-  }
-
-  // 3. 处理老格式（/images/xxx.png）
-  // 这里的 extractImageKey 会剥掉 /images/，得到纯文件名 xxx.png
-  const key = extractImageKey(src);
+  // 2. 如果是文章插图（/images/ 开头，或者纯文件名），统一走 images/ 逻辑
+  const key = extractImageKey(src) || src.replace(/^\/+/, "");
   if (!key) return src;
   
-  // 关键：用 getOptimizedImageUrl 重新拼成 https://img.ryn.us.ci/images/xxx.png?...
-  return getOptimizedImageUrl(key, width);
+  // 强制拼成 https://img.ryn.us.ci/images/xxx.png
+  return `${R2_PUBLIC_DOMAIN}/images/${key}?quality=80&width=${width}`;
 }
 
 // 下面的 SEO 和 JSON-LD 构建函数保持原样，直接复制你之前的即可

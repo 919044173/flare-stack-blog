@@ -1,3 +1,9 @@
+// ==========================================
+// 1. 全局配置：你的 R2 自定义域名
+// ⚠️ 请务必确认这里是你在 Cloudflare R2 绑定的实际域名
+// ==========================================
+const R2_PUBLIC_DOMAIN = "https://img.ryn.us.ci"; 
+
 export function getContentTypeFromKey(key: string): string | undefined {
   const extension = key.split(".").pop()?.toLowerCase();
   const contentTypes: Record<string, string> = {
@@ -63,8 +69,12 @@ export const PUBLIC_IMAGE_WIDTH = {
   avatar: 400,
 } as const;
 
+/**
+ * 获取原图 URL（用于正文大图，无参数，纯 CDN 静态缓存）
+ */
 export function getOriginalImageUrl(key: string) {
-  return `/images/${key}`;
+  // ✅ 修改：加上 R2 自定义域名前缀
+  return `${R2_PUBLIC_DOMAIN}/images/${key}`;
 }
 
 export function hasImageTransformParams(searchParams: URLSearchParams) {
@@ -76,13 +86,21 @@ export function hasImageTransformParams(searchParams: URLSearchParams) {
   );
 }
 
+/**
+ * 获取压缩后的图片 URL（用于缩略图、头像，触发 Cloudflare 图像转换）
+ */
 export function getOptimizedImageUrl(key: string, width?: number) {
   if (isGifKey(key)) {
-    return `/images/${key}?original=true`;
+    // ✅ 修改：加上域名前缀
+    return `${R2_PUBLIC_DOMAIN}/images/${key}?original=true`;
   }
-  return `/images/${key}?quality=80${width ? `&width=${width}` : ""}`;
+  // ✅ 修改：加上域名前缀
+  return `${R2_PUBLIC_DOMAIN}/images/${key}?quality=80${width ? `&width=${width}` : ""}`;
 }
 
+/**
+ * 统一入口：根据 src 提取 key，重新生成带域名的完整 URL
+ */
 export function getPublicImageSrc(src: string, width: number) {
   const key = extractImageKey(src);
   if (!key) return src;
@@ -91,7 +109,8 @@ export function getPublicImageSrc(src: string, width: number) {
   if (!version) return optimized;
   const next = new URL(optimized, "http://dummy.com");
   next.searchParams.set("v", version);
-  return `${next.pathname}${next.search}`;
+  // ✅ 修改：这里必须重新拼上 R2_PUBLIC_DOMAIN，否则域名会丢失
+  return `${R2_PUBLIC_DOMAIN}${next.pathname}${next.search}`;
 }
 
 export function buildTransformOptions(
@@ -122,4 +141,99 @@ export function buildTransformOptions(
   }
 
   return transformOptions;
+}
+
+// ==========================================
+// 以下为 SEO 和 JSON-LD 的构建函数，保持原样即可
+// ==========================================
+
+type ArticleJsonLdInput = {
+  authorName: string;
+  canonicalHref: string;
+  post: {
+    slug: string;
+    summary?: string | null;
+    title: string;
+    publishedAt?: Date | string | null;
+    updatedAt: Date | string;
+    tags?: Array<{ name: string }> | undefined;
+    image?: string | null;
+  };
+};
+
+function buildCanonicalHref(
+  pathname: string,
+  searchParams?: Record<string, string | undefined>,
+) {
+  const normalizedPath =
+    pathname === "/" ? "/" : pathname.replace(/\/+$/, "") || "/";
+
+  if (!searchParams) return normalizedPath;
+
+  const params = new URLSearchParams();
+
+  Object.entries(searchParams).forEach(([key, value]) => {
+    if (value) {
+      params.set(key, value);
+    }
+  });
+
+  const query = params.toString();
+  return query ? `${normalizedPath}?${query}` : normalizedPath;
+}
+
+export function buildCanonicalUrl(
+  domain: string,
+  pathname: string,
+  searchParams?: Record<string, string | undefined>,
+) {
+  return `https://${domain}${buildCanonicalHref(pathname, searchParams)}`;
+}
+
+export function canonicalLink(href: string) {
+  return {
+    rel: "canonical",
+    href,
+  } as const;
+}
+
+export function buildArticleJsonLd({
+  authorName,
+  canonicalHref,
+  post,
+}: ArticleJsonLdInput) {
+  const jsonLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: post.title,
+    url: canonicalHref,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": canonicalHref,
+    },
+    author: {
+      "@type": "Person",
+      name: authorName,
+    },
+    dateModified: new Date(post.updatedAt).toISOString(),
+  };
+
+  if (post.summary) {
+    jsonLd.description = post.summary;
+  }
+
+  if (post.publishedAt) {
+    jsonLd.datePublished = new Date(post.publishedAt).toISOString();
+  }
+
+  const keywords = post.tags?.map((tag) => tag.name).filter(Boolean);
+  if (keywords?.length) {
+    jsonLd.keywords = keywords;
+  }
+
+  if (post.image) {
+    jsonLd.image = post.image;
+  }
+
+  return JSON.stringify(jsonLd);
 }

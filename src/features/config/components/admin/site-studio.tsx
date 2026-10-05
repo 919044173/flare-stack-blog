@@ -29,6 +29,7 @@ import {
   SOCIAL_PLATFORM_KEYS,
   SOCIAL_PLATFORMS,
 } from "@/features/config/utils/social-platforms";
+import { getPublicImageSrc } from "@/features/media/utils/media.utils"; // ✅ 新增导入
 import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages";
 
@@ -74,12 +75,13 @@ const ICON_FIELDS = [
   },
 ];
 
+// ✅ 修改：现在统一走 getPublicImageSrc 拼域名
 function previewSrc(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   if (!trimmed) return null;
-  if (trimmed.startsWith("/") || /^https?:\/\//.test(trimmed)) return trimmed;
-  return null;
+  
+  return getPublicImageSrc(trimmed, 400); 
 }
 
 export function SiteStudio() {
@@ -113,7 +115,8 @@ export function SiteStudio() {
           </label>
           <OverlayUpload
             name="site.theme.fuwari.homeBg"
-            assetPath="themes/fuwari/home-bg.webp"
+            // ✅ 修改：去掉了 themes/fuwari/ 前缀
+            assetPath="home-bg.webp"
             accept={IMAGE_ACCEPT}
             className="site-banner-upload"
             label={
@@ -134,7 +137,8 @@ export function SiteStudio() {
             </div>
             <OverlayUpload
               name="site.theme.fuwari.avatar"
-              assetPath="themes/fuwari/avatar.png"
+              // ✅ 修改：去掉了 themes/fuwari/ 前缀
+              assetPath="avatar.png"
               accept={IMAGE_ACCEPT}
               className="site-avatar-upload"
               label={

@@ -48,14 +48,15 @@ export async function putSiteAsset(
   file: File,
   assetPath: string,
 ): Promise<{ key: string; url: string }> {
-  // 👇 路径写死为 asset/themes/fuwari/
-  const key = `asset/themes/fuwari/${assetPath}`;
+  const key = `asset/${assetPath}`;
   
-  await env.R2.put(key, file.stream(), {
+  // ✅ 物理存储路径：加上 images/ 前缀
+  await env.R2.put(`images/${key}`, file.stream(), {
     httpMetadata: {
       contentType: file.type,
     },
   });
   
-  return { key, url: `/${key}` };
+  // ✅ 返回绝对路径
+  return { key, url: `${R2_PUBLIC_DOMAIN}/images/${key}` };
 }

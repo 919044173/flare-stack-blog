@@ -1,3 +1,4 @@
+import * as TagRepo from "@/features/tags/data/tags.data";
 import { invalidate } from "@/features/cache/public-cache";
 import * as CategoryRepo from "@/features/categories/data/categories.data";
 import * as MediaRepo from "@/features/media/data/media.data";
@@ -180,6 +181,15 @@ async function createPublishRevision(
       coverMediaId: post.coverMediaId ?? null,
     },
   });
+}
+
+// ✅ 动态：自动加"动态"标签（覆盖用户设置）
+const isMoment = post.category?.name === "动态";
+if (isMoment) {
+  const momentTag = await TagRepo.findTagByName(context.db, "动态");
+  if (momentTag) {
+    await TagRepo.setPostTags(context.db, post.id, [momentTag.id]);
+  }
 }
 
 /**

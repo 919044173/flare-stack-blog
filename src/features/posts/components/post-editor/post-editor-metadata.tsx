@@ -1,5 +1,7 @@
+import { useQuery } from "@tanstack/react-query";
 import { Loader2, RefreshCw } from "lucide-react";
 import TextareaAutosize from "react-textarea-autosize";
+import { categoryOptionsQuery } from "@/features/categories/queries";
 import { CategorySelect } from "@/features/categories/components/category-select";
 import { TagSelector } from "@/features/tags/components/tag-selector";
 import { cn } from "@/lib/utils";
@@ -21,6 +23,10 @@ export function PostEditorMetadata({
   onPostChange,
   onGenerateSlug,
 }: PostEditorMetadataProps) {
+  const { data: categories } = useQuery(categoryOptionsQuery);
+  const momentCategory = categories?.find((c) => c.name === "动态");
+  const isMoment = post.categoryId === momentCategory?.id;
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 custom-scrollbar">
@@ -37,13 +43,16 @@ export function PostEditorMetadata({
           />
         </label>
 
-        <div className="grid gap-2">
-          <p className="text-xs fuwari-text-50">{m.editor_meta_tags()}</p>
-          <TagSelector
-            value={post.tagIds}
-            onChange={(tagIds) => onPostChange({ tagIds })}
-          />
-        </div>
+        {/* 动态：自动加"动态"标签，不显示选择器 */}
+        {!isMoment && (
+          <div className="grid gap-2">
+            <p className="text-xs fuwari-text-50">{m.editor_meta_tags()}</p>
+            <TagSelector
+              value={post.tagIds}
+              onChange={(tagIds) => onPostChange({ tagIds })}
+            />
+          </div>
+        )}
 
         <label className="grid gap-2 text-xs fuwari-text-50">
           {m.editor_meta_link()}
@@ -72,7 +81,7 @@ export function PostEditorMetadata({
           </div>
         </label>
 
-        {/* 置顶开关：日期字段已移除，发布时间由后端自动记录 */}
+        {/* 置顶开关 */}
         <div className="flex items-center justify-between gap-3">
           <span className="text-xs fuwari-text-50">
             {m.editor_meta_pin()}

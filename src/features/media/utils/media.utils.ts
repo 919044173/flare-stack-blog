@@ -1,6 +1,6 @@
 // ==========================================
 // 1. 全局配置：你的 R2 自定义域名
-// ⚠️ 请务必确认这里是你在 Cloudflare R2 绑定的实际域名
+// ⚠️ 请确认这里是你在 Cloudflare R2 绑定的实际域名，末尾不要带斜杠
 // ==========================================
 const R2_PUBLIC_DOMAIN = "https://img.ryn.us.ci"; 
 
@@ -53,11 +53,6 @@ export function extractImageKey(src: string): string | undefined {
   return undefined;
 }
 
-/**
- * 生成优化后的图片 URL
- * @param key - R2 key
- * @param width - 可选的宽度限制
- */
 export function isGifKey(key: string, contentType?: string | null) {
   return key.toLowerCase().endsWith(".gif") || contentType === "image/gif";
 }
@@ -71,10 +66,10 @@ export const PUBLIC_IMAGE_WIDTH = {
 
 /**
  * 获取原图 URL（用于正文大图，无参数，纯 CDN 静态缓存）
+ * ✅ 已修改：去掉了 /images/ 前缀，直接跟在域名后
  */
 export function getOriginalImageUrl(key: string) {
-  // ✅ 修改：加上 R2 自定义域名前缀
-  return `${R2_PUBLIC_DOMAIN}/images/${key}`;
+  return `${R2_PUBLIC_DOMAIN}/${key}`;
 }
 
 export function hasImageTransformParams(searchParams: URLSearchParams) {
@@ -88,18 +83,18 @@ export function hasImageTransformParams(searchParams: URLSearchParams) {
 
 /**
  * 获取压缩后的图片 URL（用于缩略图、头像，触发 Cloudflare 图像转换）
+ * ✅ 已修改：去掉了 /images/ 前缀
  */
 export function getOptimizedImageUrl(key: string, width?: number) {
   if (isGifKey(key)) {
-    // ✅ 修改：加上域名前缀
-    return `${R2_PUBLIC_DOMAIN}/images/${key}?original=true`;
+    return `${R2_PUBLIC_DOMAIN}/${key}?original=true`;
   }
-  // ✅ 修改：加上域名前缀
-  return `${R2_PUBLIC_DOMAIN}/images/${key}?quality=80${width ? `&width=${width}` : ""}`;
+  return `${R2_PUBLIC_DOMAIN}/${key}?quality=80${width ? `&width=${width}` : ""}`;
 }
 
 /**
  * 统一入口：根据 src 提取 key，重新生成带域名的完整 URL
+ * ✅ 已修改：拼装时去掉了 /images/
  */
 export function getPublicImageSrc(src: string, width: number) {
   const key = extractImageKey(src);
@@ -109,7 +104,7 @@ export function getPublicImageSrc(src: string, width: number) {
   if (!version) return optimized;
   const next = new URL(optimized, "http://dummy.com");
   next.searchParams.set("v", version);
-  // ✅ 修改：这里必须重新拼上 R2_PUBLIC_DOMAIN，否则域名会丢失
+  // 重新拼回 R2_PUBLIC_DOMAIN，确保完整路径
   return `${R2_PUBLIC_DOMAIN}${next.pathname}${next.search}`;
 }
 
@@ -144,7 +139,7 @@ export function buildTransformOptions(
 }
 
 // ==========================================
-// 以下为 SEO 和 JSON-LD 的构建函数，保持原样即可
+// 以下为 SEO 和 JSON-LD 的构建函数，保持原样
 // ==========================================
 
 type ArticleJsonLdInput = {

@@ -96,21 +96,20 @@ export function getOptimizedImageUrl(key: string, width?: number) {
 export function getPublicImageSrc(src: string, width: number) {
   if (!src) return src;
 
-  // 1. 处理系统设置里的静态资源（存的是 /asset/themes/fuwari/xxx）
+  // 1. 针对系统设置里的静态资源（例如 /asset/themes/fuwari/xxx）
   if (src.startsWith("/asset/")) {
-    // 如果传进来的是相对路径，直接拼域名
-    if (src.startsWith("/")) {
-      return `${R2_PUBLIC_DOMAIN}${src}`;
-    }
-    // 如果以后存了绝对路径，直接用
-    return src;
+    return `${R2_PUBLIC_DOMAIN}${src}`; // 直接拼域名，不加 /images/
   }
 
-  // 2. 处理普通文章图片（存的是 /images/xxx）
+  // 2. 针对老路径或普通图片（例如 /images/xxx）
+  // 确保不再重复叠加 /images/
+  if (src.startsWith("/images/")) {
+     return `${R2_PUBLIC_DOMAIN}${src}`;
+  }
+
+  // 3. 兜底：如果数据库里存的是纯文件名（xxx.png），按文章图片处理
   const key = extractImageKey(src);
   if (!key) return src;
-  
-  // 如果有压缩需求，走带参数的优化地址
   return getOptimizedImageUrl(key, width);
 }
 

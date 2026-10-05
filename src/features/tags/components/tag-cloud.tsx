@@ -26,9 +26,12 @@ export function Tags() {
   const { data: tags } = useSuspenseQuery(tagsQueryOptions);
   const [expanded, setExpanded] = useState(false);
 
-  if (tags.length === 0) return null;
+  // ✅ 过滤掉"动态"标签（动态不参与标签筛选）
+  const visibleTags = tags.filter((tag) => tag.name !== "动态");
 
-  const collapsed = tags.length >= COLLAPSE_THRESHOLD && !expanded;
+  if (visibleTags.length === 0) return null;
+
+  const collapsed = visibleTags.length >= COLLAPSE_THRESHOLD && !expanded;
 
   return (
     <ExpandableSidebarCard
@@ -37,7 +40,7 @@ export function Tags() {
       onExpand={() => setExpanded(true)}
       contentClassName="flex flex-wrap gap-2"
     >
-      {tags.map((tag) => (
+      {visibleTags.map((tag) => (
         <Link
           key={tag.id}
           to="/posts"

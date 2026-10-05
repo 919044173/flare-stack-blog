@@ -29,7 +29,7 @@ import {
   SOCIAL_PLATFORM_KEYS,
   SOCIAL_PLATFORMS,
 } from "@/features/config/utils/social-platforms";
-import { getPublicImageSrc } from "@/features/media/utils/media.utils"; // ✅ 新增导入
+import { R2_PUBLIC_DOMAIN } from "@/features/media/utils/media.utils"; // ✅ 直接导入域名常量
 import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages";
 
@@ -75,13 +75,21 @@ const ICON_FIELDS = [
   },
 ];
 
-// ✅ 修改：现在统一走 getPublicImageSrc 拼域名
+// ✅ 修改：直接拼接 R2 域名，不再走 getPublicImageSrc 的宽高参数逻辑
 function previewSrc(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   if (!trimmed) return null;
   
-  return getPublicImageSrc(trimmed, 400); 
+  // 如果已经是绝对路径，直接返回
+  if (trimmed.startsWith("http")) return trimmed;
+  
+  // 如果是相对路径（/asset/...），拼上 R2 域名
+  if (trimmed.startsWith("/")) {
+    return `${R2_PUBLIC_DOMAIN}${trimmed}`;
+  }
+  
+  return null;
 }
 
 export function SiteStudio() {
@@ -115,7 +123,7 @@ export function SiteStudio() {
           </label>
           <OverlayUpload
             name="site.theme.fuwari.homeBg"
-            // ✅ 修改：去掉了 themes/fuwari/ 前缀
+            // ✅ 纯文件名，后端会自动加 asset/themes/fuwari/ 前缀
             assetPath="home-bg.webp"
             accept={IMAGE_ACCEPT}
             className="site-banner-upload"
@@ -137,7 +145,7 @@ export function SiteStudio() {
             </div>
             <OverlayUpload
               name="site.theme.fuwari.avatar"
-              // ✅ 修改：去掉了 themes/fuwari/ 前缀
+              // ✅ 纯文件名，后端会自动加 asset/themes/fuwari/ 前缀
               assetPath="avatar.png"
               accept={IMAGE_ACCEPT}
               className="site-avatar-upload"

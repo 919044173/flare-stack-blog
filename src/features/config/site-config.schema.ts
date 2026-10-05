@@ -86,16 +86,34 @@ function createSiteTextFormSchema(max: number, messages: Messages) {
     .max(max, messages.settings_site_validation_too_long({ max }));
 }
 
+// ✅ 已修改：允许 themes/、favicon/、social/ 开头
 function createAssetRefSchema() {
-  return z.string().refine((value) => value === "" || value.startsWith("/"), {
-    message: "Please enter a root-relative path",
-  });
+  return z.string().refine(
+    (value) =>
+      value === "" ||
+      value.startsWith("/") ||
+      value.startsWith("themes/") ||
+      value.startsWith("favicon/") ||
+      value.startsWith("social/"),
+    {
+      message: "Please enter a root-relative path",
+    },
+  );
 }
 
+// ✅ 已修改：允许 themes/、favicon/、social/ 开头
 function createAssetRefFormSchema(messages: Messages) {
-  return z.string().refine((value) => value === "" || value.startsWith("/"), {
-    message: messages.settings_site_validation_invalid_asset_ref(),
-  });
+  return z.string().refine(
+    (value) =>
+      value === "" ||
+      value.startsWith("/") ||
+      value.startsWith("themes/") ||
+      value.startsWith("favicon/") ||
+      value.startsWith("social/"),
+    {
+      message: messages.settings_site_validation_invalid_asset_ref(),
+    },
+  );
 }
 
 function isExternalImageUrl(value: string) {
@@ -113,20 +131,31 @@ function createBackgroundImageRefSchema() {
     .trim()
     .refine(
       (value) =>
-        value === "" || value.startsWith("/") || isExternalImageUrl(value),
+        value === "" ||
+        value.startsWith("/") ||
+        value.startsWith("themes/") ||
+        value.startsWith("favicon/") ||
+        value.startsWith("social/") ||
+        isExternalImageUrl(value),
       {
         message: "Please enter a root-relative path or http(s) URL",
       },
     );
 }
 
+// ✅ 已修改：允许 themes/、favicon/、social/ 开头
 function createBackgroundImageRefFormSchema(messages: Messages) {
   return z
     .string()
     .trim()
     .refine(
       (value) =>
-        value === "" || value.startsWith("/") || isExternalImageUrl(value),
+        value === "" ||
+        value.startsWith("/") ||
+        value.startsWith("themes/") ||
+        value.startsWith("favicon/") ||
+        value.startsWith("social/") ||
+        isExternalImageUrl(value),
       {
         message:
           messages.settings_site_validation_invalid_background_image_ref(),
@@ -135,15 +164,30 @@ function createBackgroundImageRefFormSchema(messages: Messages) {
 }
 
 function createAssetPathSchema() {
-  return z.string().refine((value) => value.startsWith("/"), {
-    message: "Please enter a root-relative path",
-  });
+  return z.string().refine(
+    (value) =>
+      value.startsWith("/") ||
+      value.startsWith("themes/") ||
+      value.startsWith("favicon/") ||
+      value.startsWith("social/"),
+    {
+      message: "Please enter a root-relative path",
+    },
+  );
 }
 
+// ✅ 已修改：允许 themes/、favicon/、social/ 开头
 function createAssetPathFormSchema(messages: Messages) {
-  return z.string().refine((value) => value.startsWith("/"), {
-    message: messages.settings_site_validation_invalid_asset_path(),
-  });
+  return z.string().refine(
+    (value) =>
+      value.startsWith("/") ||
+      value.startsWith("themes/") ||
+      value.startsWith("favicon/") ||
+      value.startsWith("social/"),
+    {
+      message: messages.settings_site_validation_invalid_asset_path(),
+    },
+  );
 }
 
 function createOptionalAssetPathSchema() {

@@ -6,12 +6,14 @@ interface EmailLayoutProps {
   children: ReactNode;
   locale?: Locale;
   previewText?: string;
+  emailSignature?: string; // ✅ 新增
 }
 
 export const EmailLayout = ({
   children,
   locale,
   previewText,
+  emailSignature, // ✅ 新增
 }: EmailLayoutProps) => {
   return (
     <div
@@ -45,7 +47,7 @@ export const EmailLayout = ({
         style={{
           maxWidth: "600px",
           margin: "0 auto",
-          padding: "30px 16px", // 调整为 30px 上下，16px 左右，手机上更好看
+          padding: "40px 20px",
         }}
       >
         <tr>
@@ -67,52 +69,35 @@ export const EmailLayout = ({
             <main>{children}</main>
 
             {/* ================= 邮件签名区 开始 ================= */}
-            <div
-              style={{
-                marginTop: "48px",
-                paddingTop: "24px",
-                borderTop: "1px solid #eaeaea", // 淡灰色分割线
-              }}
-            >
-              <p
+            {emailSignature && (
+              <div
                 style={{
-                  margin: "0 0 8px 0",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  color: "#1a1a1a",
+                  marginTop: "40px",
+                  borderTop: "1px solid #eaeaea",
+                  paddingTop: "20px",
                 }}
               >
-                {blogConfig.author}
-              </p>
-              <p
-                style={{
-                  margin: "0 0 8px 0",
-                  fontSize: "12px",
-                  color: "#888888",
-                  lineHeight: "1.6",
-                }}
-              >
-                {blogConfig.description}
-              </p>
-              <p style={{ margin: "0", fontSize: "12px" }}>
-                <a
-                  href="https://ryn.us.ci"
+                <pre
                   style={{
-                    color: "#1a1a1a",
-                    textDecoration: "underline",
-                    textUnderlineOffset: "2px",
+                    fontFamily:
+                      '"Courier New", Courier, "Noto Sans Mono", monospace',
+                    fontSize: "12px",
+                    color: "#666",
+                    lineHeight: "1.6",
+                    whiteSpace: "pre-wrap",
+                    margin: "0",
                   }}
                 >
-                  ryn.us.ci
-                </a>
-              </p>
-            </div>
+                  {emailSignature}
+                </pre>
+              </div>
+            )}
             {/* ================= 邮件签名区 结束 ================= */}
 
             <footer
               style={{
-                marginTop: "24px", // 因为签名区已经占了间距，底部版权可以稍微紧凑一点
-                paddingTop: "16px",
+                marginTop: "30px",
+                paddingTop: "20px",
                 borderTop: "1px solid #f0f0f0",
                 textAlign: "center",
               }}

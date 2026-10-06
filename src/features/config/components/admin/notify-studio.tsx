@@ -197,6 +197,22 @@ function EmailChannel() {
               className={SETTINGS_FIELD_CLASS}
             />
           </Field>
+
+          {/* 👇 新增：邮件签名输入框 */}
+          <div className="settings-field col-span-full">
+            <label htmlFor="email-signature">邮件签名</label>
+            <textarea
+              id="email-signature"
+              {...register("email.emailSignature")}
+              placeholder="这段文字会自动附加在所有系统发送的邮件底部。"
+              className={cn(SETTINGS_FIELD_CLASS, "h-auto min-h-[80px] py-2")}
+              rows={3}
+            />
+            <p className="text-xs fuwari-text-50 mt-1">
+              支持纯文本，换行也会在邮件中保留。
+            </p>
+          </div>
+          {/* 👆 新增结束 */}
         </div>
 
         <button

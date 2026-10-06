@@ -8,6 +8,7 @@ interface AdminNotificationEmailProps {
   commenterName: string;
   locale: Locale;
   postTitle: string;
+  emailSignature?: string; // ✅ 新增
 }
 
 export const AdminNotificationEmail = ({
@@ -16,6 +17,7 @@ export const AdminNotificationEmail = ({
   commenterName,
   locale,
   postTitle,
+  emailSignature, // ✅ 新增
 }: AdminNotificationEmailProps) => {
   return (
     <EmailLayout
@@ -24,6 +26,7 @@ export const AdminNotificationEmail = ({
         { commenterName, postTitle },
         { locale },
       )}
+      emailSignature={emailSignature} // ✅ 传递
     >
       <h1
         style={{

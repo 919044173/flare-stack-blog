@@ -6,6 +6,7 @@ interface AuthEmailProps {
   locale: Locale;
   type: "verification" | "reset-password";
   url: string;
+  emailSignature?: string;
 }
 
 export const AuthEmail = ({ locale, type, url }: AuthEmailProps) => {
@@ -21,7 +22,7 @@ export const AuthEmail = ({ locale, type, url }: AuthEmailProps) => {
     : m.email_auth_reset_action({}, { locale });
 
   return (
-    <EmailLayout locale={locale} previewText={title}>
+    <EmailLayout locale={locale} previewText={title} emailSignature={emailSignature}>
       <h1
         style={{
           fontFamily: '"Noto Serif SC", "Songti SC", Georgia, serif',

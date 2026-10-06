@@ -4,6 +4,9 @@ import { admin } from "better-auth/plugins";
 
 export function createAuthConfig() {
   return {
+    rateLimit: {
+      enabled: false, // 把默认的 true 改成 false
+    },
     emailAndPassword: {
       enabled: true,
     },

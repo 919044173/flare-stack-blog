@@ -27,16 +27,17 @@ export async function putSiteAsset(
   file: File,
   assetPath: string,
 ): Promise<{ key: string; url: string }> {
-  // ✅ 确认一下：这里直接是 asset/，没有 images/
   const key = `asset/${assetPath}`;
 
-  // 这里如果报错，我们再排查
   await env.R2.put(key, file.stream(), {
-    httpMetadata: { contentType: file.type },
+    httpMetadata: {
+      contentType: file.type,
+    },
   });
 
-  // ✅ 返回正确链接
+  // ✅ 正确的返回值
   return { 
-  key, 
-  url: `https://img.ryn.us.ci/${key}?v=${Date.now()}` 
-};
+    key, 
+    url: `https://img.ryn.us.ci/${key}?v=${Date.now()}` 
+  };
+}

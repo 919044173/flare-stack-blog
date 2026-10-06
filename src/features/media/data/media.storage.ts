@@ -36,5 +36,7 @@ export async function putSiteAsset(
   });
 
   // ✅ 返回正确链接
-  return { key, url: `https://img.ryn.us.ci/${key}?v=${Date.now()` };
-}
+  return { 
+  key, 
+  url: `https://img.ryn.us.ci/${key}?v=${Date.now()}` 
+};

@@ -19,6 +19,7 @@ export const SystemConfigSchema = z.object({
       password: z.string().optional(),
       senderName: z.string().optional(),
       senderAddress: z.union([z.email(), z.literal("")]).optional(),
+      emailSignature: z.string().max(500).optional(),
     })
     .optional(),
   notification: z

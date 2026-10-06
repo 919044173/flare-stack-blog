@@ -4,7 +4,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { getSessionFromCtx } from "better-auth/api";
 import { betterAuth } from "better-auth/minimal";
 import { renderToStaticMarkup } from "react-dom/server";
-import * as ConfigService from "@/features/config/service/config.service"; // ✅ 新增
+import * as ConfigService from "@/features/config/service/config.service";
 import { AuthEmail } from "@/features/email/templates/AuthEmail";
 import {
   inspectApiKeyManagementAccess,
@@ -40,7 +40,7 @@ export function getAuth({ db, env }: { db: DB; env: Env }) {
   } = serverEnv(env);
 
   return betterAuth({
-    ...createAuthConfig(),
+    ...createAuthConfig({ db, env }), // 👈 建议把 context 传给 createAuthConfig，方便后续扩展
     socialProviders: {
       github: {
         clientId: GITHUB_CLIENT_ID,
@@ -54,6 +54,8 @@ export function getAuth({ db, env }: { db: DB; env: Env }) {
             typeof ctx.body?.email === "string" ? ctx.body.email.trim() : "";
           if (!email) return;
 
+          // ⚠️ 注意：这里依然保留了“注册接口”的防刷限制。
+          // 如果你发现无法注册，可能是这个限制生效了。测试时可以一并注释。
           const allowed = await checkEmailRateLimit(env, "email-signup", email);
           if (!allowed) {
             throw APIError.from("BAD_REQUEST", {
@@ -94,7 +96,7 @@ export function getAuth({ db, env }: { db: DB; env: Env }) {
       enabled: true,
       requireEmailVerification: true,
       sendResetPassword: async ({ user, url }) => {
-        // Per-email rate limit: 3 per hour — silently skip if exceeded
+        // 发送重置密码邮件（这里也建议先注释掉，方便你测试）
         const allowed = await checkEmailRateLimit(
           env,
           "email-reset",
@@ -102,7 +104,6 @@ export function getAuth({ db, env }: { db: DB; env: Env }) {
         );
         if (!allowed) return;
 
-        // ✅ 获取配置里的签名
         const systemConfig = await ConfigService.getSystemConfig({
           db,
           env,
@@ -114,7 +115,7 @@ export function getAuth({ db, env }: { db: DB; env: Env }) {
         const emailSignature = systemConfig?.email?.emailSignature;
 
         const emailHtml = renderToStaticMarkup(
-          AuthEmail({ locale: LOCALE, type: "reset-password", url, emailSignature }), // ✅ 传给模板
+          AuthEmail({ locale: LOCALE, type: "reset-password", url, emailSignature }),
         );
 
         await env.QUEUE.send({
@@ -129,15 +130,14 @@ export function getAuth({ db, env }: { db: DB; env: Env }) {
     },
     emailVerification: {
       sendVerificationEmail: async ({ user, url }) => {
-        // Per-email rate limit: 3 per hour — silently skip if exceeded
-        const allowed = await checkEmailRateLimit(
-          env,
-          "email-verify",
-          user.email,
-        );
-        if (!allowed) return;
+        // 🛠️ 修改点：注释掉了这里的限流检查！
+        // 之前的代码是：const allowed = await checkEmailRateLimit(env, "email-verify", user.email);
+        // if (!allowed) return;
+        // 这样的话，你测试时短时间注册的账号就不会因为被限流而收不到邮件了。
+        
+        // 注意：虽然解除了发信的限流，但注册接口(sign-up/email)的限流依然存在。
+        // 如果注册本身被拦截了，也需要去 hooks.before 里注释掉 sign-up 的限流。
 
-        // ✅ 获取配置里的签名
         const systemConfig = await ConfigService.getSystemConfig({
           db,
           env,
@@ -149,7 +149,7 @@ export function getAuth({ db, env }: { db: DB; env: Env }) {
         const emailSignature = systemConfig?.email?.emailSignature;
 
         const emailHtml = renderToStaticMarkup(
-          AuthEmail({ locale: LOCALE, type: "verification", url, emailSignature }), // ✅ 传给模板
+          AuthEmail({ locale: LOCALE, type: "verification", url, emailSignature }),
         );
 
         await env.QUEUE.send({

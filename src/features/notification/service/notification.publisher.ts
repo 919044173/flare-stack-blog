@@ -44,11 +44,13 @@ async function enqueueEmailNotification(
   context: DbContext,
   event: NotificationEvent,
   delivery: NotificationDelivery,
+  emailSignature?: string, // ✅ 新增参数
 ) {
   const emailMessage = createEmailMessageFromNotification(
     event,
     serverEnv(context.env).LOCALE,
     delivery,
+    emailSignature, // ✅ 传进去
   );
   await context.env.QUEUE.send({
     type: "EMAIL",
@@ -86,12 +88,16 @@ export async function publishNotificationEvent(
   const userEmailEnabled = config?.notification?.user?.emailEnabled ?? true;
   const webhookEndpoint = configuredWebhookEndpoint(config);
 
+  // ✅ 新增：从配置里把签名提取出来
+  const emailSignature = config?.email?.emailSignature;
+
   if (isUserNotificationEvent(parsed)) {
     if (!userEmailEnabled || !delivery?.to) {
       return;
     }
 
-    await enqueueEmailNotification(context, parsed, delivery);
+    // ✅ 修改：传 emailSignature
+    await enqueueEmailNotification(context, parsed, delivery, emailSignature);
     console.log(
       JSON.stringify({
         level: "info",
@@ -111,10 +117,16 @@ export async function publishNotificationEvent(
       const to = delivery?.to ?? (await AuthData.findAdminEmail(context.db));
       if (to) {
         deliveries.push(
-          enqueueEmailNotification(context, parsed, {
-            to,
-            unsubscribeUrl: delivery?.unsubscribeUrl,
-          }),
+          // ✅ 修改：传 emailSignature
+          enqueueEmailNotification(
+            context,
+            parsed,
+            {
+              to,
+              unsubscribeUrl: delivery?.unsubscribeUrl,
+            },
+            emailSignature, // ✅ 第四个参数
+          ),
         );
         emailed = true;
       }

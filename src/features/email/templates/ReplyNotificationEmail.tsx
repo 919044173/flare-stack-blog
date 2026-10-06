@@ -9,6 +9,7 @@ interface ReplyNotificationEmailProps {
   replierName: string;
   replyPreview: string;
   unsubscribeUrl: string;
+  emailSignature?: string;
 }
 
 export const ReplyNotificationEmail = ({
@@ -18,6 +19,7 @@ export const ReplyNotificationEmail = ({
   replierName,
   replyPreview,
   unsubscribeUrl,
+  emailSignature,
 }: ReplyNotificationEmailProps) => {
   return (
     <EmailLayout
@@ -25,7 +27,7 @@ export const ReplyNotificationEmail = ({
       previewText={m.email_comment_reply_preview(
         { replierName, postTitle },
         { locale },
-      )}
+      )} emailSignature={emailSignature}
     >
       <h1
         style={{

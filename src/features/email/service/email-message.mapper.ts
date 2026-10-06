@@ -30,6 +30,7 @@ export function createEmailMessageFromNotification(
   event: NotificationEvent,
   locale: Locale,
   delivery: NotificationDelivery,
+  emailSignature?: string, // ✅ 新增
 ): EmailMessage["data"] {
   switch (event.type) {
     case "comment.admin_root_created":
@@ -46,6 +47,7 @@ export function createEmailMessageFromNotification(
             commenterName: event.data.commenterName,
             commentPreview: event.data.commentPreview,
             commentUrl: event.data.commentUrl,
+            emailSignature, // ✅ 传给模板
           }),
         ),
       };
@@ -69,6 +71,7 @@ export function createEmailMessageFromNotification(
             replyPreview: event.data.replyPreview,
             commentUrl: event.data.commentUrl,
             unsubscribeUrl,
+            emailSignature, // ✅ 传给模板
           }),
         ),
         headers: unsubscribeUrl

@@ -4,6 +4,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { getSessionFromCtx } from "better-auth/api";
 import { betterAuth } from "better-auth/minimal";
 import { renderToStaticMarkup } from "react-dom/server";
+import * as ConfigService from "@/features/config/service/config.service"; // ✅ 新增
 import { AuthEmail } from "@/features/email/templates/AuthEmail";
 import {
   inspectApiKeyManagementAccess,
@@ -101,8 +102,19 @@ export function getAuth({ db, env }: { db: DB; env: Env }) {
         );
         if (!allowed) return;
 
+        // ✅ 获取配置里的签名
+        const systemConfig = await ConfigService.getSystemConfig({
+          db,
+          env,
+          executionCtx: {
+            waitUntil: () => {},
+            passThroughOnException: () => {},
+          } as unknown as ExecutionContext,
+        });
+        const emailSignature = systemConfig?.email?.emailSignature;
+
         const emailHtml = renderToStaticMarkup(
-          AuthEmail({ locale: LOCALE, type: "reset-password", url }),
+          AuthEmail({ locale: LOCALE, type: "reset-password", url, emailSignature }), // ✅ 传给模板
         );
 
         await env.QUEUE.send({
@@ -125,8 +137,19 @@ export function getAuth({ db, env }: { db: DB; env: Env }) {
         );
         if (!allowed) return;
 
+        // ✅ 获取配置里的签名
+        const systemConfig = await ConfigService.getSystemConfig({
+          db,
+          env,
+          executionCtx: {
+            waitUntil: () => {},
+            passThroughOnException: () => {},
+          } as unknown as ExecutionContext,
+        });
+        const emailSignature = systemConfig?.email?.emailSignature;
+
         const emailHtml = renderToStaticMarkup(
-          AuthEmail({ locale: LOCALE, type: "verification", url }),
+          AuthEmail({ locale: LOCALE, type: "verification", url, emailSignature }), // ✅ 传给模板
         );
 
         await env.QUEUE.send({
